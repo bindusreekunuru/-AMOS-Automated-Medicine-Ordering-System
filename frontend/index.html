@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Automatic Medicine Ordering System</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+}
+
+/* Navbar */
+
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 50px;
+    background:white;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.logo{
+    font-size:24px;
+    font-weight:bold;
+    color:#2c3e50;
+}
+
+nav button{
+    padding:10px 20px;
+    margin-left:10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.login{
+    background:#3498db;
+    color:white;
+}
+
+.register{
+    background:#2ecc71;
+    color:white;
+}
+
+nav button:hover{
+    opacity:0.9;
+}
+
+/* Hero Section */
+
+.hero{
+    text-align:center;
+    padding:80px 20px;
+}
+
+.hero h1{
+    font-size:40px;
+    color:#2c3e50;
+}
+
+.hero p{
+    max-width:650px;
+    margin:auto;
+    font-size:18px;
+    color:#555;
+}
+
+/* Features */
+
+.features{
+    padding:50px 20px;
+    text-align:center;
+}
+
+.features h2{
+    color:#2c3e50;
+}
+
+.feature-container{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:20px;
+    margin-top:30px;
+}
+
+.feature-box{
+    background:white;
+    padding:20px;
+    width:220px;
+    border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+.feature-box h3{
+    margin-bottom:10px;
+    color:#34495e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+AMOS
+</div>
+
+<nav>
+<a href="login.html">
+<button class="login">Login</button>
+</a>
+<a href="register.html">
+<button class="register">Register</button>
+</a>
+</nav>
+
+</header>
+
+<section class="hero">
+
+<h1>Automatic Medicine Ordering System</h1>
+
+<p>
+AMOS is an AI-powered platform designed to help patients manage long-term medications. 
+It predicts medicine depletion, sends reminders, and automatically reorders medicines from nearby pharmacies to ensure uninterrupted treatment.
+</p>
+
+</section>
+
+<section class="features">
+
+<h2>Key Features</h2>
+
+<div class="feature-container">
+
+<div class="feature-box">
+<h3>AI Depletion Prediction</h3>
+<p>Predicts when medicines will run out based on dosage and quantity.</p>
+</div>
+
+<div class="feature-box">
+<h3>Automatic Reordering</h3>
+<p>Triggers refill orders before medicine stock runs out.</p>
+</div>
+
+<div class="feature-box">
+<h3>Nearby Pharmacy Detection</h3>
+<p>Identifies the nearest available pharmacy using location services.</p>
+</div>
+
+<div class="feature-box">
+<h3>Medicine Reminders</h3>
+<p>Sends daily notifications to remind users to take medicines.</p>
+</div>
+
+<div class="feature-box">
+<h3>Secure Payment</h3>
+<p>Ensures safe and reliable transactions through payment gateways.</p>
+</div>
+
+</div>
+
+</section>
+
+</body>
+
+</html>

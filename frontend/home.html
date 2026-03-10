@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Automatic Medicine Ordering System</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+}
+
+/* Navbar */
+
+header{
+    background:#2c3e50;
+    color:white;
+    padding:15px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:20px;
+}
+
+nav a:hover{
+    text-decoration:underline;
+}
+
+/* Page Content */
+
+.container{
+    padding:40px;
+}
+
+.greeting{
+    font-size:22px;
+    margin-bottom:25px;
+    color:#2c3e50;
+}
+
+/* Card */
+
+.card{
+    background:white;
+    padding:25px;
+    width:420px;
+    border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Inputs */
+
+input, textarea{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+/* Buttons */
+
+button{
+    margin-top:12px;
+    padding:10px;
+    width:100%;
+    background:#3498db;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#2980b9;
+}
+
+/* Upload Section */
+
+.upload-section{
+    margin-top:20px;
+}
+
+/* Hide file inputs */
+
+input[type="file"]{
+    display:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+AMOS - Automatic Medicine Ordering System
+</div>
+
+<nav>
+<a href="#">Home</a>
+<a href="#">Reminders</a>
+<a href="#">Orders</a>
+<a href="#">Medicines</a>
+<a href="#">Profile</a>
+</nav>
+
+</header>
+
+<div class="container">
+
+<div class="greeting">
+Hey User!
+</div>
+
+<div class="card">
+
+<h3>Enter Medicine Details</h3>
+
+<form>
+
+<input type="text" placeholder="Medicine Name" required>
+
+<input type="number" placeholder="Dosage per day" required>
+
+<input type="number" placeholder="Total tablets quantity" required>
+
+<textarea placeholder="Additional Notes"></textarea>
+
+<button type="submit">Submit</button>
+
+</form>
+
+<div class="upload-section">
+
+<h3>Upload Prescription</h3>
+
+<button onclick="document.getElementById('uploadFile').click()">
+Upload
+</button>
+
+<button onclick="document.getElementById('cameraInput').click()">
+Take a Picture
+</button>
+
+<input type="file" id="uploadFile" accept="image/*">
+
+<input type="file" id="cameraInput" accept="image/*" capture="environment">
+
+</div>
+
+</div>
+
+</div>
+
+</body>
+
+</html>
