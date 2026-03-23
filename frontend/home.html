@@ -95,8 +95,6 @@ button:hover{
     margin-top:20px;
 }
 
-/* Hide file inputs */
-
 input[type="file"]{
     display:none;
 }
@@ -133,19 +131,26 @@ Hey User!
 
 <h3>Enter Medicine Details</h3>
 
-<form>
+<!-- ✅ FIXED FORM -->
+<form onsubmit="event.preventDefault(); submitPrescription();">
 
-<input type="text" placeholder="Medicine Name" required>
+<input id="medicine" type="text" placeholder="Medicine Name" required>
 
-<input type="number" placeholder="Dosage per day" required>
+<input id="dosage" type="number" placeholder="Dosage per day" required>
 
-<input type="number" placeholder="Total tablets quantity" required>
+<input id="days" type="number" placeholder="Duration (days)" required>
 
-<textarea placeholder="Additional Notes"></textarea>
+<textarea id="notes" placeholder="Additional Notes"></textarea>
 
 <button type="submit">Submit</button>
 
 </form>
+
+<!-- ✅ VIEW BUTTON -->
+<button onclick="loadPrescriptions()">View Saved Prescriptions</button>
+
+<!-- ✅ OUTPUT AREA -->
+<div id="output" style="margin-top:15px;"></div>
 
 <div class="upload-section">
 
@@ -169,7 +174,8 @@ Take a Picture
 
 </div>
 
-</body>
-
-</html>
+<!-- ✅ CORRECT SCRIPT PLACEMENT -->
 <script src="script.js"></script>
+
+</body>
+</html>
