@@ -7,7 +7,6 @@
 <title>Login into AMOS</title>
 
 <style>
-
 body{
     margin:0;
     font-family: Arial, sans-serif;
@@ -56,7 +55,6 @@ button{
 button:hover{
     background:#2980b9;
 }
-
 </style>
 
 </head>
@@ -67,11 +65,12 @@ button:hover{
 
 <h2>Login into AMOS</h2>
 
-<form>
+<!-- ✅ FIXED FORM -->
+<form onsubmit="event.preventDefault(); loginUser();">
 
-<input type="text" placeholder="User ID" required>
+<input id="email" type="text" placeholder="Email" required>
 
-<input type="password" placeholder="Password" required>
+<input id="password" type="password" placeholder="Password" required>
 
 <button type="submit">Login</button>
 
@@ -79,7 +78,9 @@ button:hover{
 
 </div>
 
+<!-- ✅ MOVE SCRIPT OUTSIDE DIV (clean practice) -->
+<script src="script.js"></script>
+
 </body>
 
 </html>
-<script src="script.js"></script>
