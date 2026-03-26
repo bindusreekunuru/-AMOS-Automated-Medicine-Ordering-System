@@ -1,43 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login into AMOS</title>
-
 <style>
 body{
     margin:0;
     font-family: Arial, sans-serif;
-    background:#f4f6f9;
+    background:#eaf1f8;
     display:flex;
     justify-content:center;
     align-items:center;
-    height:100vh;
+    min-height:100vh;
+    padding:20px;
+    box-sizing:border-box;
 }
 
 .container{
+    width:100%;
+    max-width:920px;
+    min-height:520px;
     background:white;
-    padding:30px;
-    width:320px;
-    border-radius:8px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 14px 35px rgba(44,62,80,0.2);
+    display:grid;
+    grid-template-columns:1fr 1fr;
+}
+
+.left-panel{
+    background:linear-gradient(145deg, #2c3e50, #365b80);
+    color:white;
+    padding:38px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.brand{
+    font-size:26px;
+    font-weight:bold;
+    letter-spacing:0.2px;
+}
+
+.tagline{
+    margin-top:10px;
+    font-size:14px;
+    line-height:1.5;
+    color:#dbeafe;
+}
+
+.benefits{
+    margin:30px 0 0;
+    padding-left:18px;
+    line-height:1.7;
+    color:#d1e7ff;
+}
+
+.version{
+    font-size:12px;
+    color:#cbd5e1;
+}
+
+.right-panel{
+    padding:42px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
 }
 
 h2{
-    text-align:center;
-    margin-bottom:20px;
+    margin:0;
     color:#2c3e50;
+    font-size:28px;
+}
+
+.welcome{
+    margin:10px 0 20px;
+    color:#64748b;
+    font-size:14px;
+}
+
+label{
+    display:block;
+    font-size:13px;
+    margin:12px 0 6px;
+    color:#374151;
+    font-weight:bold;
 }
 
 input{
     width:100%;
     padding:10px;
-    margin-top:12px;
-    border:1px solid #ccc;
+    border:1px solid #cbd5e1;
     border-radius:5px;
     font-size:14px;
+    box-sizing:border-box;
+}
+
+input:focus{
+    border-color:#3498db;
+    outline:none;
+    box-shadow:0 0 0 3px rgba(52,152,219,0.15);
+}
+
+.password-wrap{
+    position:relative;
+}
+
+.password-wrap input{
+    padding-right:74px;
+}
+
+.toggle-pass{
+    position:absolute;
+    right:8px;
+    top:50%;
+    transform:translateY(-50%);
+    border:none;
+    background:transparent;
+    color:#2563eb;
+    font-size:12px;
+    cursor:pointer;
+    padding:5px 8px;
+    width:auto;
+    margin-top:0;
+    border-radius:4px;
+}
+
+.row{
+    margin-top:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+}
+
+.checkbox-wrap{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#475569;
+}
+
+.checkbox-wrap input{
+    width:auto;
+    margin:0;
+}
+
+.link{
+    color:#2563eb;
+    text-decoration:none;
+}
+
+.link:hover{
+    text-decoration:underline;
 }
 
 button{
@@ -55,32 +173,133 @@ button{
 button:hover{
     background:#2980b9;
 }
+
+.status{
+    margin-top:12px;
+    font-size:13px;
+    min-height:18px;
+}
+
+.signup{
+    margin-top:16px;
+    text-align:center;
+    font-size:13px;
+    color:#64748b;
+}
+
+@media (max-width: 840px){
+    .container{
+        grid-template-columns:1fr;
+        max-width:470px;
+    }
+
+    .left-panel{
+        padding:26px;
+    }
+
+    .right-panel{
+        padding:28px 24px;
+    }
+}
+
 </style>
-
 </head>
-
 <body>
-
 <div class="container">
+    <section class="left-panel">
+        <div>
+            <div class="brand">AMOS</div>
+            <p class="tagline">Automatic Medicine Ordering System that keeps your treatment on track.</p>
+            <ul class="benefits">
+                <li>Track medicine inventory</li>
+                <li>Receive refill reminders</li>
+                <li>Manage prescriptions securely</li>
+            </ul>
+        </div>
+        <p class="version">AMOS v1.0</p>
+    </section>
 
-<h2>Login into AMOS</h2>
+    <section class="right-panel">
+        <h2>Welcome Back</h2>
+        <p class="welcome">Sign in to continue to your AMOS dashboard.</p>
 
-<!-- ✅ FIXED FORM -->
-<form onsubmit="event.preventDefault(); loginUser();">
+        <form id="loginForm">
+            <label for="userId">User ID</label>
+            <input id="userId" type="text" placeholder="Enter your user ID" required>
 
-<input id="email" type="text" placeholder="Email" required>
+            <label for="password">Password</label>
+            <div class="password-wrap">
+                <input id="password" type="password" placeholder="Enter your password" required>
+                <button class="toggle-pass" type="button" id="togglePassword">Show</button>
+            </div>
 
-<input id="password" type="password" placeholder="Password" required>
+            <div class="row">
+                <label class="checkbox-wrap">
+                    <input type="checkbox" id="rememberMe">
+                    Remember me
+                </label>
+                <a class="link" href="#">Forgot password?</a>
+            </div>
 
-<button type="submit">Login</button>
+            <button type="submit">Login</button>
+            <p class="status" id="status"></p>
+        </form>
 
-</form>
-
+        <p class="signup">Do not have an account? <a class="link" href="#">Create one</a></p>
+    </section>
 </div>
 
-<!-- ✅ MOVE SCRIPT OUTSIDE DIV (clean practice) -->
-<script src="script.js"></script>
+<script>
+const loginForm = document.getElementById("loginForm");
+const userIdInput = document.getElementById("userId");
+const passwordInput = document.getElementById("password");
+const rememberMe = document.getElementById("rememberMe");
+const togglePassword = document.getElementById("togglePassword");
+const statusText = document.getElementById("status");
 
+const savedUserId = localStorage.getItem("amosSavedUserId");
+if (savedUserId) {
+    userIdInput.value = savedUserId;
+    rememberMe.checked = true;
+}
+
+togglePassword.addEventListener("click", () => {
+    const isHidden = passwordInput.type === "password";
+    passwordInput.type = isHidden ? "text" : "password";
+    togglePassword.textContent = isHidden ? "Hide" : "Show";
+});
+
+loginForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const userId = userIdInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!userId || !password) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Please enter both User ID and Password.";
+        return;
+    }
+
+    if (password.length < 4) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Password must be at least 4 characters.";
+        return;
+    }
+
+    if (rememberMe.checked) {
+        localStorage.setItem("amosSavedUserId", userId);
+    } else {
+        localStorage.removeItem("amosSavedUserId");
+    }
+
+    statusText.style.color = "#0f766e";
+    statusText.textContent = "Login successful. Redirecting...";
+
+    setTimeout(() => {
+        window.location.href = "home.html";
+    }, 700);
+});
+</script>
 </body>
-
 </html>

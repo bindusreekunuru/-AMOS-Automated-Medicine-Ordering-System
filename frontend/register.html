@@ -1,43 +1,103 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registration - AMOS</title>
-
 <style>
 body{
     margin:0;
     font-family: Arial, sans-serif;
-    background:#f4f6f9;
+    background:#eaf1f8;
     display:flex;
     justify-content:center;
     align-items:center;
-    height:100vh;
+    min-height:100vh;
+    padding:20px;
+    box-sizing:border-box;
 }
 
 .container{
     background:white;
-    padding:30px;
-    width:350px;
-    border-radius:8px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    padding:34px;
+    width:100%;
+    max-width:520px;
+    border-radius:12px;
+    box-shadow:0 12px 28px rgba(44,62,80,0.18);
 }
 
 h2{
-    text-align:center;
-    margin-bottom:20px;
+    margin:0;
     color:#2c3e50;
+    font-size:30px;
+}
+
+.subtitle{
+    margin:8px 0 18px;
+    color:#64748b;
+    font-size:14px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+label{
+    display:block;
+    margin:8px 0 6px;
+    font-size:13px;
+    font-weight:bold;
+    color:#374151;
 }
 
 input, textarea{
     width:100%;
     padding:10px;
-    margin-top:10px;
-    border:1px solid #ccc;
+    border:1px solid #cbd5e1;
     border-radius:5px;
     font-size:14px;
+    box-sizing:border-box;
+}
+
+input:focus, textarea:focus{
+    border-color:#3498db;
+    outline:none;
+    box-shadow:0 0 0 3px rgba(52,152,219,0.15);
+}
+
+textarea{
+    resize:vertical;
+    min-height:86px;
+}
+
+.full{
+    grid-column:1 / -1;
+}
+
+.password-wrap{
+    position:relative;
+}
+
+.password-wrap input{
+    padding-right:72px;
+}
+
+.toggle-pass{
+    position:absolute;
+    right:8px;
+    top:50%;
+    transform:translateY(-50%);
+    border:none;
+    background:transparent;
+    color:#2563eb;
+    font-size:12px;
+    cursor:pointer;
+    padding:5px 8px;
+    width:auto;
+    margin-top:0;
 }
 
 button{
@@ -55,12 +115,42 @@ button{
 button:hover{
     background:#27ae60;
 }
+
+.status{
+    margin-top:12px;
+    font-size:13px;
+    min-height:18px;
+}
+
+.login-link{
+    text-align:center;
+    margin-top:16px;
+    font-size:13px;
+    color:#64748b;
+}
+
+.login-link a{
+    color:#2563eb;
+    text-decoration:none;
+}
+
+.login-link a:hover{
+    text-decoration:underline;
+}
+
+@media (max-width: 620px){
+    .container{
+        padding:24px 20px;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+}
+
 </style>
-
 </head>
-
 <body>
-
 <div class="container">
 
 <h2>Registration</h2>
@@ -81,14 +171,118 @@ button:hover{
 <input id="age" type="number" placeholder="Age" required>
 
 <textarea id="address" placeholder="Address" rows="3" required></textarea>
+    <h2>Create Account</h2>
+    <p class="subtitle">Register to manage medicines, reminders, and refills with AMOS.</p>
 
-<button type="submit">Register</button>
+    <form id="registerForm">
+        <div class="grid">
+            <div>
+                <label for="username">Username</label>
+                <input id="username" type="text" placeholder="Enter username" required>
+            </div>
+            <div>
+                <label for="fullName">Full Name</label>
+                <input id="fullName" type="text" placeholder="Enter full name" required>
+            </div>
 
-</form>
+            <div>
+                <label for="password">Password</label>
+                <div class="password-wrap">
+                    <input id="password" type="password" placeholder="Create password" required>
+                    <button class="toggle-pass" type="button" id="togglePassword">Show</button>
+                </div>
+            </div>
+            <div>
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="password-wrap">
+                    <input id="confirmPassword" type="password" placeholder="Re-enter password" required>
+                    <button class="toggle-pass" type="button" id="toggleConfirmPassword">Show</button>
+                </div>
+            </div>
 
+            <div>
+                <label for="email">Email ID</label>
+                <input id="email" type="email" placeholder="name@email.com" required>
+            </div>
+            <div>
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="tel" placeholder="10-digit mobile number" required>
+            </div>
+
+            <div>
+                <label for="age">Age</label>
+                <input id="age" type="number" min="1" max="120" placeholder="Enter age" required>
+            </div>
+
+            <div class="full">
+                <label for="address">Address</label>
+                <textarea id="address" rows="3" placeholder="Enter your address" required></textarea>
+            </div>
+        </div>
+
+        <button type="submit">Register</button>
+        <p class="status" id="status"></p>
+    </form>
+
+    <p class="login-link">Already have an account? <a href="login.html">Login</a></p>
 </div>
 
 <script src="script.js"></script>
 
+<script>
+const registerForm = document.getElementById("registerForm");
+const password = document.getElementById("password");
+const confirmPassword = document.getElementById("confirmPassword");
+const phone = document.getElementById("phone");
+const statusText = document.getElementById("status");
+const togglePassword = document.getElementById("togglePassword");
+const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+
+function setPasswordToggle(button, input) {
+    button.addEventListener("click", () => {
+        const isHidden = input.type === "password";
+        input.type = isHidden ? "text" : "password";
+        button.textContent = isHidden ? "Hide" : "Show";
+    });
+}
+
+setPasswordToggle(togglePassword, password);
+setPasswordToggle(toggleConfirmPassword, confirmPassword);
+
+registerForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const phoneValue = phone.value.trim();
+
+    if (password.value.length < 4) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Password must be at least 4 characters.";
+        return;
+    }
+
+    if (password.value !== confirmPassword.value) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Password and confirm password do not match.";
+        return;
+    }
+
+    if (!/^[0-9]{10}$/.test(phoneValue)) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Phone number must be exactly 10 digits.";
+        return;
+    }
+
+    statusText.style.color = "#0f766e";
+    statusText.textContent = "Registration successful. Redirecting to login...";
+
+    registerForm.reset();
+    togglePassword.textContent = "Show";
+    toggleConfirmPassword.textContent = "Show";
+
+    setTimeout(() => {
+        window.location.href = "login.html";
+    }, 800);
+});
+</script>
 </body>
 </html>

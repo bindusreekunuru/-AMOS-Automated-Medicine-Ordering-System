@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Profile</title>
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    color:#1f2937;
+}
+
+header{
+    background:#2c3e50;
+    color:white;
+    padding:15px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:20px;
+}
+
+nav a:hover{
+    text-decoration:underline;
+}
+
+.container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:28px 24px 48px;
+}
+
+.page-title{
+    margin:0;
+    font-size:30px;
+    color:#2c3e50;
+}
+
+.subtitle{
+    margin:8px 0 18px;
+    color:#64748b;
+}
+
+.top-grid{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:18px;
+}
+
+.card{
+    background:white;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    padding:20px;
+}
+
+.profile-card{
+    text-align:center;
+}
+
+.avatar{
+    width:108px;
+    height:108px;
+    border-radius:50%;
+    margin:0 auto 12px;
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-weight:bold;
+    font-size:32px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.name{
+    margin:0;
+    color:#1f2937;
+}
+
+.role{
+    margin:6px 0 0;
+    color:#64748b;
+    font-size:14px;
+}
+
+.badge{
+    margin-top:12px;
+    display:inline-block;
+    background:#dcfce7;
+    color:#166534;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:999px;
+    font-weight:bold;
+}
+
+.quick-list{
+    margin:16px 0 0;
+    padding:0;
+    list-style:none;
+    text-align:left;
+}
+
+.quick-list li{
+    display:flex;
+    justify-content:space-between;
+    border-bottom:1px solid #eef2f7;
+    padding:9px 0;
+    font-size:14px;
+}
+
+.quick-list li:last-child{
+    border-bottom:none;
+}
+
+.section-title{
+    margin:0 0 12px;
+    color:#2c3e50;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.field{
+    display:flex;
+    flex-direction:column;
+}
+
+.field label{
+    font-size:13px;
+    font-weight:bold;
+    color:#374151;
+    margin:0 0 6px;
+}
+
+.field input, .field textarea, .field select{
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    padding:10px;
+    font-size:14px;
+    box-sizing:border-box;
+}
+
+.field textarea{
+    min-height:84px;
+    resize:vertical;
+}
+
+.full{
+    grid-column:1 / -1;
+}
+
+.actions{
+    margin-top:14px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.btn{
+    border:none;
+    border-radius:6px;
+    padding:10px 14px;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.btn-primary{
+    background:#2563eb;
+    color:white;
+}
+
+.btn-primary:hover{
+    background:#1e4fc2;
+}
+
+.btn-secondary{
+    background:#e2e8f0;
+    color:#1f2937;
+}
+
+.btn-secondary:hover{
+    background:#cfd8e3;
+}
+
+.section{
+    margin-top:18px;
+}
+
+.status{
+    margin-top:12px;
+    font-size:13px;
+    min-height:18px;
+}
+
+@media (max-width: 980px){
+    .top-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media (max-width: 720px){
+    header{
+        padding:14px 16px;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+    }
+
+    nav a{
+        margin-left:0;
+        margin-right:14px;
+    }
+
+    .container{
+        padding:20px 16px 40px;
+    }
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">AMOS - Automatic Medicine Ordering System</div>
+    <nav>
+        <a href="home.html">Home</a>
+        <a href="Reminders.html">Reminders</a>
+        <a href="order.html">Orders</a>
+        <a href="Medicine.html">Medicines</a>
+        <a href="profile.html">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <h1 class="page-title">User Profile</h1>
+    <p class="subtitle">View and manage complete user information.</p>
+
+    <div class="top-grid">
+        <section class="card profile-card">
+            <div class="avatar" id="avatarText">U</div>
+            <h2 class="name" id="displayName">User Name</h2>
+            <p class="role" id="displayEmail">user@email.com</p>
+            <span class="badge">Account Active</span>
+
+            <ul class="quick-list">
+                <li><span>Age</span><strong id="displayAge">--</strong></li>
+                <li><span>Blood Group</span><strong id="displayBlood">--</strong></li>
+                <li><span>Phone</span><strong id="displayPhone">--</strong></li>
+                <li><span>City</span><strong id="displayCity">--</strong></li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h3 class="section-title">Personal Information</h3>
+            <form id="profileForm">
+                <div class="grid">
+                    <div class="field">
+                        <label for="fullName">Full Name</label>
+                        <input id="fullName" type="text" required>
+                    </div>
+                    <div class="field">
+                        <label for="username">Username</label>
+                        <input id="username" type="text" required>
+                    </div>
+                    <div class="field">
+                        <label for="email">Email</label>
+                        <input id="email" type="email" required>
+                    </div>
+                    <div class="field">
+                        <label for="phone">Phone</label>
+                        <input id="phone" type="tel" required>
+                    </div>
+                    <div class="field">
+                        <label for="age">Age</label>
+                        <input id="age" type="number" min="1" max="120" required>
+                    </div>
+                    <div class="field">
+                        <label for="gender">Gender</label>
+                        <select id="gender">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="bloodGroup">Blood Group</label>
+                        <select id="bloodGroup">
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="city">City</label>
+                        <input id="city" type="text" required>
+                    </div>
+                    <div class="field full">
+                        <label for="address">Address</label>
+                        <textarea id="address" required></textarea>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">Medical Information</h3>
+                    <div class="grid">
+                        <div class="field full">
+                            <label for="allergies">Allergies</label>
+                            <textarea id="allergies" placeholder="e.g. Penicillin"></textarea>
+                        </div>
+                        <div class="field full">
+                            <label for="conditions">Existing Conditions</label>
+                            <textarea id="conditions" placeholder="e.g. Diabetes, Hypertension"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">Emergency Contact</h3>
+                    <div class="grid">
+                        <div class="field">
+                            <label for="emergencyName">Contact Name</label>
+                            <input id="emergencyName" type="text" required>
+                        </div>
+                        <div class="field">
+                            <label for="emergencyRelation">Relation</label>
+                            <input id="emergencyRelation" type="text" required>
+                        </div>
+                        <div class="field full">
+                            <label for="emergencyPhone">Contact Phone</label>
+                            <input id="emergencyPhone" type="tel" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button class="btn btn-primary" type="submit">Save Profile</button>
+                    <button class="btn btn-secondary" type="button" id="resetBtn">Reset</button>
+                </div>
+                <p class="status" id="statusText"></p>
+            </form>
+        </section>
+    </div>
+</div>
+
+<script>
+const storageKey = "amosUserProfile";
+
+const defaultProfile = {
+    fullName: "User Name",
+    username: "user123",
+    email: "user@email.com",
+    phone: "9876543210",
+    age: "30",
+    gender: "Male",
+    bloodGroup: "O+",
+    city: "Chennai",
+    address: "123 Main Street, Chennai",
+    allergies: "None",
+    conditions: "None",
+    emergencyName: "Family Member",
+    emergencyRelation: "Sibling",
+    emergencyPhone: "9123456789"
+};
+
+const form = document.getElementById("profileForm");
+const resetBtn = document.getElementById("resetBtn");
+const statusText = document.getElementById("statusText");
+
+function getProfile() {
+    return JSON.parse(localStorage.getItem(storageKey)) || defaultProfile;
+}
+
+function setInputValue(id, value) {
+    document.getElementById(id).value = value || "";
+}
+
+function fillForm(profile) {
+    setInputValue("fullName", profile.fullName);
+    setInputValue("username", profile.username);
+    setInputValue("email", profile.email);
+    setInputValue("phone", profile.phone);
+    setInputValue("age", profile.age);
+    setInputValue("gender", profile.gender);
+    setInputValue("bloodGroup", profile.bloodGroup);
+    setInputValue("city", profile.city);
+    setInputValue("address", profile.address);
+    setInputValue("allergies", profile.allergies);
+    setInputValue("conditions", profile.conditions);
+    setInputValue("emergencyName", profile.emergencyName);
+    setInputValue("emergencyRelation", profile.emergencyRelation);
+    setInputValue("emergencyPhone", profile.emergencyPhone);
+}
+
+function syncProfileCard(profile) {
+    document.getElementById("displayName").textContent = profile.fullName || "User Name";
+    document.getElementById("displayEmail").textContent = profile.email || "user@email.com";
+    document.getElementById("displayAge").textContent = profile.age || "--";
+    document.getElementById("displayBlood").textContent = profile.bloodGroup || "--";
+    document.getElementById("displayPhone").textContent = profile.phone || "--";
+    document.getElementById("displayCity").textContent = profile.city || "--";
+
+    const firstChar = (profile.fullName || "U").trim().charAt(0).toUpperCase() || "U";
+    document.getElementById("avatarText").textContent = firstChar;
+}
+
+function collectFormData() {
+    return {
+        fullName: document.getElementById("fullName").value.trim(),
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        age: document.getElementById("age").value.trim(),
+        gender: document.getElementById("gender").value,
+        bloodGroup: document.getElementById("bloodGroup").value,
+        city: document.getElementById("city").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        allergies: document.getElementById("allergies").value.trim(),
+        conditions: document.getElementById("conditions").value.trim(),
+        emergencyName: document.getElementById("emergencyName").value.trim(),
+        emergencyRelation: document.getElementById("emergencyRelation").value.trim(),
+        emergencyPhone: document.getElementById("emergencyPhone").value.trim()
+    };
+}
+
+function isTenDigits(value) {
+    return /^[0-9]{10}$/.test(value);
+}
+
+form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const profile = collectFormData();
+
+    if (!isTenDigits(profile.phone) || !isTenDigits(profile.emergencyPhone)) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Phone numbers must be exactly 10 digits.";
+        return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(profile));
+    syncProfileCard(profile);
+    statusText.style.color = "#0f766e";
+    statusText.textContent = "Profile saved successfully.";
+});
+
+resetBtn.addEventListener("click", () => {
+    localStorage.removeItem(storageKey);
+    fillForm(defaultProfile);
+    syncProfileCard(defaultProfile);
+    statusText.style.color = "#1d4ed8";
+    statusText.textContent = "Profile reset to default values.";
+});
+
+const initialProfile = getProfile();
+fillForm(initialProfile);
+syncProfileCard(initialProfile);
+</script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Medicines</title>
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    color:#1f2937;
+}
+
+header{
+    background:#2c3e50;
+    color:white;
+    padding:15px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:20px;
+}
+
+nav a:hover{
+    text-decoration:underline;
+}
+
+.container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:30px 24px 48px;
+}
+
+.title{
+    margin:0;
+    color:#2c3e50;
+    font-size:30px;
+}
+
+.subtitle{
+    margin:8px 0 18px;
+    color:#64748b;
+}
+
+.top-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+}
+
+.top-bar input, .top-bar select{
+    border:1px solid #cbd5e1;
+    border-radius:6px;
+    padding:10px;
+    font-size:14px;
+}
+
+.top-bar input{
+    min-width:220px;
+    flex:1;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin-bottom:16px;
+}
+
+.stat{
+    background:white;
+    border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    padding:14px;
+}
+
+.stat-label{
+    font-size:13px;
+    color:#6b7280;
+}
+
+.stat-value{
+    margin-top:6px;
+    font-size:26px;
+    font-weight:bold;
+    color:#1d4ed8;
+}
+
+.med-list{
+    display:grid;
+    gap:10px;
+}
+
+.med-card{
+    background:white;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.med-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.med-name{
+    margin:0;
+    font-size:18px;
+    color:#1f2937;
+}
+
+.meta{
+    margin-top:6px;
+    color:#64748b;
+    font-size:13px;
+}
+
+.status{
+    font-size:12px;
+    font-weight:bold;
+    padding:4px 8px;
+    border-radius:999px;
+}
+
+.ok{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.low{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.critical{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.actions{
+    margin-top:10px;
+}
+
+.delete-btn{
+    border:none;
+    background:#ef4444;
+    color:white;
+    padding:7px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+.delete-btn:hover{
+    background:#dc2626;
+}
+
+.empty{
+    background:white;
+    border:1px dashed #cbd5e1;
+    border-radius:8px;
+    padding:20px;
+    text-align:center;
+    color:#64748b;
+}
+
+.hint{
+    margin-top:8px;
+    font-size:13px;
+    color:#64748b;
+}
+
+@media (max-width: 900px){
+    .stats{
+        grid-template-columns:repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px){
+    header{
+        padding:14px 16px;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+    }
+
+    nav a{
+        margin-left:0;
+        margin-right:14px;
+    }
+
+    .container{
+        padding:20px 16px 40px;
+    }
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">AMOS - Automatic Medicine Ordering System</div>
+    <nav>
+        <a href="home.html">Home</a>
+        <a href="Reminders.html">Reminders</a>
+        <a href="order.html">Orders</a>
+        <a href="Medicine.html">Medicines</a>
+        <a href="profile.html">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <h1 class="title">Submitted Medicines</h1>
+    <p class="subtitle">List of medicines submitted by the user.</p>
+
+    <section class="top-bar">
+        <input type="text" id="searchInput" placeholder="Search medicine name">
+        <select id="statusFilter">
+            <option value="all">All Stock Status</option>
+            <option value="ok">In Stock</option>
+            <option value="low">Low Stock</option>
+            <option value="critical">Critical</option>
+        </select>
+    </section>
+
+    <section class="stats">
+        <article class="stat">
+            <div class="stat-label">Total Medicines</div>
+            <div class="stat-value" id="totalCount">0</div>
+        </article>
+        <article class="stat">
+            <div class="stat-label">In Stock</div>
+            <div class="stat-value" id="okCount">0</div>
+        </article>
+        <article class="stat">
+            <div class="stat-label">Low Stock</div>
+            <div class="stat-value" id="lowCount">0</div>
+        </article>
+        <article class="stat">
+            <div class="stat-label">Critical</div>
+            <div class="stat-value" id="criticalCount">0</div>
+        </article>
+    </section>
+
+    <section id="medList" class="med-list"></section>
+    <p class="hint">Tip: Save medicines from `home.html` into `localStorage` key `amosMedicines` to see them here automatically.</p>
+</div>
+
+<script>
+const storageKey = "amosMedicines";
+const medList = document.getElementById("medList");
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+
+function getMedicines() {
+    return JSON.parse(localStorage.getItem(storageKey)) || [];
+}
+
+function stockStatus(quantity, dosage) {
+    const daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
+    if (daysLeft <= 2) return { key: "critical", label: "Critical" };
+    if (daysLeft <= 7) return { key: "low", label: "Low Stock" };
+    return { key: "ok", label: "In Stock" };
+}
+
+function updateStats(medicines) {
+    const counts = { total: medicines.length, ok: 0, low: 0, critical: 0 };
+    medicines.forEach((item) => {
+        const status = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
+        counts[status] += 1;
+    });
+
+    document.getElementById("totalCount").textContent = counts.total;
+    document.getElementById("okCount").textContent = counts.ok;
+    document.getElementById("lowCount").textContent = counts.low;
+    document.getElementById("criticalCount").textContent = counts.critical;
+}
+
+function filteredMedicines() {
+    const medicines = getMedicines();
+    const query = searchInput.value.trim().toLowerCase();
+    const selected = statusFilter.value;
+
+    return medicines.filter((item) => {
+        const status = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
+        const matchStatus = selected === "all" ? true : status === selected;
+        const matchSearch = (item.medicineName || "").toLowerCase().includes(query);
+        return matchStatus && matchSearch;
+    });
+}
+
+function deleteMedicine(id) {
+    const medicines = getMedicines().filter((item) => item.id !== id);
+    localStorage.setItem(storageKey, JSON.stringify(medicines));
+    render();
+}
+
+function render() {
+    const allMedicines = getMedicines();
+    const medicines = filteredMedicines();
+    updateStats(allMedicines);
+    medList.innerHTML = "";
+
+    if (allMedicines.length === 0) {
+        medList.innerHTML = '<div class="empty">No medicines submitted yet.</div>';
+        return;
+    }
+
+    if (medicines.length === 0) {
+        medList.innerHTML = '<div class="empty">No medicines match the selected filters.</div>';
+        return;
+    }
+
+    medicines.forEach((item) => {
+        const quantity = Number(item.tabletsQty || 0);
+        const dosage = Number(item.dosagePerDay || 1);
+        const daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
+        const status = stockStatus(quantity, dosage);
+        const notes = item.notes ? item.notes : "No notes provided.";
+        const addedDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-";
+
+        const card = document.createElement("article");
+        card.className = "med-card";
+        card.innerHTML = `
+            <div class="med-head">
+                <h3 class="med-name">${item.medicineName || "Medicine"}</h3>
+                <span class="status ${status.key}">${status.label}</span>
+            </div>
+            <div class="meta">Dosage/Day: ${dosage} | Quantity: ${quantity} | Estimated Days Left: ${daysLeft}</div>
+            <div class="meta">Reorder Level: ${item.reorderLevel || "-"} | Added: ${addedDate}</div>
+            <div class="meta">Notes: ${notes}</div>
+            <div class="actions">
+                <button class="delete-btn" data-id="${item.id}">Delete</button>
+            </div>
+        `;
+        medList.appendChild(card);
+    });
+
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            deleteMedicine(btn.dataset.id);
+        });
+    });
+}
+
+searchInput.addEventListener("input", render);
+statusFilter.addEventListener("change", render);
+
+render();
+</script>
+</body>
+</html>

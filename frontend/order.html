@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Orders</title>
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    color:#1f2937;
+}
+
+header{
+    background:#2c3e50;
+    color:white;
+    padding:15px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-left:20px;
+}
+
+nav a:hover{
+    text-decoration:underline;
+}
+
+.container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:30px 24px 48px;
+}
+
+.title{
+    margin:0;
+    color:#2c3e50;
+    font-size:30px;
+}
+
+.subtitle{
+    margin:8px 0 18px;
+    color:#64748b;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.stat-card{
+    background:white;
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+.stat-label{
+    font-size:13px;
+    color:#6b7280;
+}
+
+.stat-value{
+    margin-top:8px;
+    font-size:26px;
+    color:#1e3a8a;
+    font-weight:bold;
+}
+
+.toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+}
+
+.toolbar input, .toolbar select{
+    padding:10px;
+    border:1px solid #d1d5db;
+    border-radius:6px;
+    font-size:14px;
+}
+
+.toolbar input{
+    min-width:240px;
+    flex:1;
+}
+
+.tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+}
+
+.tab-btn{
+    border:1px solid #cbd5e1;
+    background:white;
+    color:#334155;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.tab-btn.active{
+    background:#2563eb;
+    color:white;
+    border-color:#2563eb;
+}
+
+.order-list{
+    display:grid;
+    gap:10px;
+}
+
+.order-card{
+    background:white;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    padding:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+}
+
+.row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.medicine-name{
+    margin:0;
+    color:#1f2937;
+    font-size:18px;
+}
+
+.meta{
+    margin-top:6px;
+    color:#64748b;
+    font-size:13px;
+}
+
+.badge{
+    display:inline-block;
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:999px;
+    font-weight:bold;
+}
+
+.status-ordered{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.status-pending{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.status-shipped{
+    background:#e0f2fe;
+    color:#0369a1;
+}
+
+.status-delivered{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.empty{
+    background:white;
+    border:1px dashed #cbd5e1;
+    border-radius:8px;
+    padding:18px;
+    text-align:center;
+    color:#64748b;
+}
+
+@media (max-width: 900px){
+    .stats{
+        grid-template-columns:repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px){
+    header{
+        padding:14px 16px;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+    }
+
+    nav a{
+        margin-left:0;
+        margin-right:14px;
+    }
+
+    .container{
+        padding:20px 16px 40px;
+    }
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+}
+</style>
+</head>
+<body>
+<header>
+    <div class="logo">AMOS - Automatic Medicine Ordering System</div>
+    <nav>
+        <a href="home.html">Home</a>
+        <a href="Reminders.html">Reminders</a>
+        <a href="order.html">Orders</a>
+        <a href="Medicine.html">Medicines</a>
+        <a href="profile.html">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <h1 class="title">Medicine Orders</h1>
+    <p class="subtitle">Track all medicine orders and quickly view already ordered items.</p>
+
+    <section class="stats">
+        <article class="stat-card">
+            <div class="stat-label">All Orders</div>
+            <div class="stat-value" id="allCount">0</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-label">Already Ordered</div>
+            <div class="stat-value" id="orderedCount">0</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-label">Delivered</div>
+            <div class="stat-value" id="deliveredCount">0</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-label">Pending/Other</div>
+            <div class="stat-value" id="pendingCount">0</div>
+        </article>
+    </section>
+
+    <section class="toolbar">
+        <input type="text" id="searchInput" placeholder="Search medicine or pharmacy">
+        <select id="statusFilter">
+            <option value="all">All Status</option>
+            <option value="Ordered">Ordered</option>
+            <option value="Pending">Pending</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+        </select>
+    </section>
+
+    <section class="tabs">
+        <button class="tab-btn active" data-tab="all">All Orders</button>
+        <button class="tab-btn" data-tab="ordered">Already Ordered Medicines</button>
+    </section>
+
+    <section id="ordersContainer" class="order-list"></section>
+</div>
+
+<script>
+const savedOrders = JSON.parse(localStorage.getItem("amosOrders")) || [];
+const orderData = savedOrders.length > 0 ? savedOrders : [
+    { id: "ORD-1001", medicine: "Paracetamol 500mg", qty: 20, pharmacy: "CityCare Pharmacy", date: "2026-03-20", status: "Ordered", price: 180 },
+    { id: "ORD-1002", medicine: "Metformin 850mg", qty: 30, pharmacy: "HealthPlus Pharmacy", date: "2026-03-21", status: "Pending", price: 320 },
+    { id: "ORD-1003", medicine: "Vitamin D3", qty: 15, pharmacy: "LifeMed Store", date: "2026-03-22", status: "Shipped", price: 250 },
+    { id: "ORD-1004", medicine: "Amoxicillin 250mg", qty: 10, pharmacy: "CityCare Pharmacy", date: "2026-03-22", status: "Delivered", price: 210 },
+    { id: "ORD-1005", medicine: "Aspirin 75mg", qty: 30, pharmacy: "MediHub", date: "2026-03-23", status: "Ordered", price: 160 },
+    { id: "ORD-1006", medicine: "Insulin Pen", qty: 2, pharmacy: "Apollo Care", date: "2026-03-24", status: "Delivered", price: 900 }
+];
+
+const ordersContainer = document.getElementById("ordersContainer");
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+const tabs = document.querySelectorAll(".tab-btn");
+
+let activeTab = "all";
+
+function updateStats() {
+    const allCount = orderData.length;
+    const orderedCount = orderData.filter(item => item.status === "Ordered").length;
+    const deliveredCount = orderData.filter(item => item.status === "Delivered").length;
+    const pendingCount = allCount - deliveredCount - orderedCount;
+
+    document.getElementById("allCount").textContent = allCount;
+    document.getElementById("orderedCount").textContent = orderedCount;
+    document.getElementById("deliveredCount").textContent = deliveredCount;
+    document.getElementById("pendingCount").textContent = pendingCount;
+}
+
+function statusClass(status) {
+    if (status === "Ordered") return "status-ordered";
+    if (status === "Pending") return "status-pending";
+    if (status === "Shipped") return "status-shipped";
+    return "status-delivered";
+}
+
+function formatDate(dateText) {
+    const d = new Date(dateText + "T00:00:00");
+    return d.toLocaleDateString();
+}
+
+function getFilteredOrders() {
+    const query = searchInput.value.trim().toLowerCase();
+    const selectedStatus = statusFilter.value;
+
+    return orderData.filter(order => {
+        const matchTab = activeTab === "all" ? true : order.status === "Ordered";
+        const matchSearch =
+            order.medicine.toLowerCase().includes(query) ||
+            order.pharmacy.toLowerCase().includes(query) ||
+            order.id.toLowerCase().includes(query);
+        const matchStatus = selectedStatus === "all" ? true : order.status === selectedStatus;
+        return matchTab && matchSearch && matchStatus;
+    });
+}
+
+function renderOrders() {
+    const filtered = getFilteredOrders();
+    ordersContainer.innerHTML = "";
+
+    if (filtered.length === 0) {
+        ordersContainer.innerHTML = '<div class="empty">No orders found for current filters.</div>';
+        return;
+    }
+
+    filtered.forEach(order => {
+        const card = document.createElement("article");
+        card.className = "order-card";
+        card.innerHTML = `
+            <div class="row">
+                <h3 class="medicine-name">${order.medicine}</h3>
+                <span class="badge ${statusClass(order.status)}">${order.status}</span>
+            </div>
+            <div class="meta">Order ID: ${order.id}</div>
+            <div class="meta">Quantity: ${order.qty} | Pharmacy: ${order.pharmacy}</div>
+            <div class="meta">Ordered Date: ${formatDate(order.date)} | Amount: Rs. ${order.price}</div>
+        `;
+        ordersContainer.appendChild(card);
+    });
+}
+
+tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+        tabs.forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        activeTab = tab.dataset.tab;
+        renderOrders();
+    });
+});
+
+searchInput.addEventListener("input", renderOrders);
+statusFilter.addEventListener("change", renderOrders);
+
+updateStats();
+renderOrders();
+</script>
+</body>
+</html>
