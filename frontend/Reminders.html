@@ -193,6 +193,7 @@ button{
 <a href="order.html">Orders</a>
 <a href="Medicine.html">Medicines</a>
 <a href="profile.html">Profile</a>
+<a href="#" onclick="logout()">Logout</a>
 </nav>
 </header>
 
@@ -237,23 +238,23 @@ button{
 </div>
 </div>
 
+<script src="api.js"></script>
 <script>
+requireAuth();
+
 const reminderForm = document.getElementById("reminderForm");
 const reminderList = document.getElementById("reminderList");
 const saveBtn = document.getElementById("saveBtn");
 const formTitle = document.getElementById("formTitle");
 const clearBtn = document.getElementById("clearBtn");
 
-let reminders = JSON.parse(localStorage.getItem("amosReminders")) || [];
+let reminders = [];
 let editingReminderId = null;
 
-function saveToStorage() {
-    localStorage.setItem("amosReminders", JSON.stringify(reminders));
-}
-
 function formatDate(dateValue) {
+    if (!dateValue) return "-";
     const date = new Date(dateValue + "T00:00:00");
-    return date.toLocaleDateString();
+    return isNaN(date) ? dateValue : date.toLocaleDateString();
 }
 
 function renderReminders() {
@@ -276,7 +277,7 @@ function renderReminders() {
                     <div class="reminder-meta">
                         ${formatDate(reminder.date)} at ${reminder.time} | ${reminder.frequency}
                     </div>
-                    ${reminder.note ? `<div class="reminder-note">${reminder.note}</div>` : ""}
+                    ${reminder.note ? '<div class="reminder-note">' + reminder.note + '</div>' : ""}
                 </div>
                 <div class="actions">
                     <button class="small-btn done-btn" data-action="toggle">${reminder.done ? "Undo" : "Done"}</button>
@@ -285,23 +286,23 @@ function renderReminders() {
                 </div>
             `;
 
-            li.querySelector('[data-action="toggle"]').addEventListener("click", () => {
-                reminder.done = !reminder.done;
-                saveToStorage();
-                renderReminders();
+            li.querySelector('[data-action="toggle"]').addEventListener("click", async () => {
+                try {
+                    await api("PATCH", "/reminders/" + reminder.id + "/toggle");
+                    loadReminders();
+                } catch(e) { console.error(e); }
             });
 
             li.querySelector('[data-action="edit"]').addEventListener("click", () => {
                 startEdit(reminder.id);
             });
 
-            li.querySelector('[data-action="delete"]').addEventListener("click", () => {
-                reminders = reminders.filter(item => item.id !== reminder.id);
-                if (editingReminderId === reminder.id) {
-                    resetForm();
-                }
-                saveToStorage();
-                renderReminders();
+            li.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+                try {
+                    await api("DELETE", "/reminders/" + reminder.id);
+                    if (editingReminderId === reminder.id) resetForm();
+                    loadReminders();
+                } catch(e) { console.error(e); }
             });
 
             reminderList.appendChild(li);
@@ -317,7 +318,7 @@ function startEdit(id) {
     document.getElementById("reminderDate").value = reminder.date;
     document.getElementById("reminderTime").value = reminder.time;
     document.getElementById("frequency").value = reminder.frequency;
-    document.getElementById("note").value = reminder.note;
+    document.getElementById("note").value = reminder.note || "";
 
     formTitle.textContent = "Edit Reminder";
     saveBtn.textContent = "Update Reminder";
@@ -330,7 +331,7 @@ function resetForm() {
     saveBtn.textContent = "Add Reminder";
 }
 
-reminderForm.addEventListener("submit", (event) => {
+reminderForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const medicineName = document.getElementById("medicineName").value.trim();
@@ -341,40 +342,47 @@ reminderForm.addEventListener("submit", (event) => {
 
     if (!medicineName || !date || !time) return;
 
-    if (editingReminderId) {
-        const reminderToEdit = reminders.find(item => item.id === editingReminderId);
-        if (!reminderToEdit) return;
-
-        reminderToEdit.medicineName = medicineName;
-        reminderToEdit.date = date;
-        reminderToEdit.time = time;
-        reminderToEdit.frequency = frequency;
-        reminderToEdit.note = note;
-    } else {
-        reminders.push({
-            id: Date.now(),
-            medicineName,
-            date,
-            time,
-            frequency,
-            note,
-            done: false
-        });
+    try {
+        saveBtn.disabled = true;
+        if (editingReminderId) {
+            await api("PUT", "/reminders/" + editingReminderId, {
+                medicineName, date, time, frequency, note
+            });
+        } else {
+            await api("POST", "/reminders", {
+                medicineName, date, time, frequency, note
+            });
+        }
+        resetForm();
+        loadReminders();
+    } catch(err) {
+        console.error("Failed to save reminder", err);
+        alert(err.message || "Failed to save reminder");
+    } finally {
+        saveBtn.disabled = false;
     }
-
-    saveToStorage();
-    renderReminders();
-    resetForm();
 });
 
-clearBtn.addEventListener("click", () => {
-    reminders = [];
-    saveToStorage();
-    renderReminders();
-    resetForm();
+clearBtn.addEventListener("click", async () => {
+    try {
+        await api("DELETE", "/reminders");
+        resetForm();
+        loadReminders();
+    } catch(e) {
+        console.error("Failed to clear reminders", e);
+    }
 });
 
-renderReminders();
+async function loadReminders() {
+    try {
+        reminders = await api("GET", "/reminders");
+        renderReminders();
+    } catch(err) {
+        reminderList.innerHTML = '<li class="empty">Failed to load reminders.</li>';
+    }
+}
+
+loadReminders();
 </script>
 </body>
 </html>

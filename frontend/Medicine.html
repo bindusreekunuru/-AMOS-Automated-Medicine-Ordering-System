@@ -224,6 +224,7 @@ nav a:hover{
         <a href="order.html">Orders</a>
         <a href="Medicine.html">Medicines</a>
         <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
     </nav>
 </header>
 
@@ -261,31 +262,29 @@ nav a:hover{
     </section>
 
     <section id="medList" class="med-list"></section>
-    <p class="hint">Tip: Save medicines from `home.html` into `localStorage` key `amosMedicines` to see them here automatically.</p>
 </div>
 
+<script src="api.js"></script>
 <script>
-const storageKey = "amosMedicines";
-const medList = document.getElementById("medList");
-const searchInput = document.getElementById("searchInput");
-const statusFilter = document.getElementById("statusFilter");
+requireAuth();
 
-function getMedicines() {
-    return JSON.parse(localStorage.getItem(storageKey)) || [];
-}
+var medList = document.getElementById("medList");
+var searchInput = document.getElementById("searchInput");
+var statusFilter = document.getElementById("statusFilter");
+var allMedicines = [];
 
 function stockStatus(quantity, dosage) {
-    const daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
+    var daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
     if (daysLeft <= 2) return { key: "critical", label: "Critical" };
     if (daysLeft <= 7) return { key: "low", label: "Low Stock" };
     return { key: "ok", label: "In Stock" };
 }
 
 function updateStats(medicines) {
-    const counts = { total: medicines.length, ok: 0, low: 0, critical: 0 };
-    medicines.forEach((item) => {
-        const status = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
-        counts[status] += 1;
+    var counts = { total: medicines.length, ok: 0, low: 0, critical: 0 };
+    medicines.forEach(function (item) {
+        var st = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
+        counts[st] += 1;
     });
 
     document.getElementById("totalCount").textContent = counts.total;
@@ -295,27 +294,29 @@ function updateStats(medicines) {
 }
 
 function filteredMedicines() {
-    const medicines = getMedicines();
-    const query = searchInput.value.trim().toLowerCase();
-    const selected = statusFilter.value;
+    var query = searchInput.value.trim().toLowerCase();
+    var selected = statusFilter.value;
 
-    return medicines.filter((item) => {
-        const status = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
-        const matchStatus = selected === "all" ? true : status === selected;
-        const matchSearch = (item.medicineName || "").toLowerCase().includes(query);
+    return allMedicines.filter(function (item) {
+        var st = stockStatus(Number(item.tabletsQty || 0), Number(item.dosagePerDay || 1)).key;
+        var matchStatus = selected === "all" ? true : st === selected;
+        var matchSearch = (item.medicineName || "").toLowerCase().includes(query);
         return matchStatus && matchSearch;
     });
 }
 
-function deleteMedicine(id) {
-    const medicines = getMedicines().filter((item) => item.id !== id);
-    localStorage.setItem(storageKey, JSON.stringify(medicines));
-    render();
+async function deleteMedicine(id) {
+    try {
+        await api("DELETE", "/medicines/" + id);
+        allMedicines = allMedicines.filter(function (item) { return item.id !== id; });
+        render();
+    } catch (err) {
+        alert("Failed to delete: " + err.message);
+    }
 }
 
 function render() {
-    const allMedicines = getMedicines();
-    const medicines = filteredMedicines();
+    var medicines = filteredMedicines();
     updateStats(allMedicines);
     medList.innerHTML = "";
 
@@ -329,42 +330,50 @@ function render() {
         return;
     }
 
-    medicines.forEach((item) => {
-        const quantity = Number(item.tabletsQty || 0);
-        const dosage = Number(item.dosagePerDay || 1);
-        const daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
-        const status = stockStatus(quantity, dosage);
-        const notes = item.notes ? item.notes : "No notes provided.";
-        const addedDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-";
+    medicines.forEach(function (item) {
+        var quantity = Number(item.tabletsQty || 0);
+        var dosage = Number(item.dosagePerDay || 1);
+        var daysLeft = dosage > 0 ? Math.floor(quantity / dosage) : quantity;
+        var st = stockStatus(quantity, dosage);
+        var notes = item.notes ? item.notes : "No notes provided.";
+        var addedDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "-";
 
-        const card = document.createElement("article");
+        var card = document.createElement("article");
         card.className = "med-card";
-        card.innerHTML = `
-            <div class="med-head">
-                <h3 class="med-name">${item.medicineName || "Medicine"}</h3>
-                <span class="status ${status.key}">${status.label}</span>
-            </div>
-            <div class="meta">Dosage/Day: ${dosage} | Quantity: ${quantity} | Estimated Days Left: ${daysLeft}</div>
-            <div class="meta">Reorder Level: ${item.reorderLevel || "-"} | Added: ${addedDate}</div>
-            <div class="meta">Notes: ${notes}</div>
-            <div class="actions">
-                <button class="delete-btn" data-id="${item.id}">Delete</button>
-            </div>
-        `;
+        card.innerHTML =
+            '<div class="med-head">' +
+                '<h3 class="med-name">' + (item.medicineName || "Medicine") + '</h3>' +
+                '<span class="status ' + st.key + '">' + st.label + '</span>' +
+            '</div>' +
+            '<div class="meta">Dosage/Day: ' + dosage + ' | Quantity: ' + quantity + ' | Estimated Days Left: ' + daysLeft + '</div>' +
+            '<div class="meta">Reorder Level: ' + (item.reorderLevel || "-") + ' | Added: ' + addedDate + '</div>' +
+            '<div class="meta">Notes: ' + notes + '</div>' +
+            '<div class="actions">' +
+                '<button class="delete-btn" data-id="' + item.id + '">Delete</button>' +
+            '</div>';
         medList.appendChild(card);
     });
 
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            deleteMedicine(btn.dataset.id);
+    document.querySelectorAll(".delete-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            deleteMedicine(Number(btn.dataset.id));
         });
     });
+}
+
+async function loadMedicines() {
+    try {
+        allMedicines = await api("GET", "/medicines");
+        render();
+    } catch (err) {
+        medList.innerHTML = '<div class="empty">Failed to load medicines.</div>';
+    }
 }
 
 searchInput.addEventListener("input", render);
 statusFilter.addEventListener("change", render);
 
-render();
+loadMedicines();
 </script>
 </body>
 </html>

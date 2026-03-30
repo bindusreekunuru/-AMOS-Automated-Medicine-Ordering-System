@@ -227,6 +227,7 @@ nav a:hover{
         <a href="order.html">Orders</a>
         <a href="Medicine.html">Medicines</a>
         <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
     </nav>
 </header>
 
@@ -272,17 +273,11 @@ nav a:hover{
     <section id="ordersContainer" class="order-list"></section>
 </div>
 
+<script src="api.js"></script>
 <script>
-const savedOrders = JSON.parse(localStorage.getItem("amosOrders")) || [];
-const orderData = savedOrders.length > 0 ? savedOrders : [
-    { id: "ORD-1001", medicine: "Paracetamol 500mg", qty: 20, pharmacy: "CityCare Pharmacy", date: "2026-03-20", status: "Ordered", price: 180 },
-    { id: "ORD-1002", medicine: "Metformin 850mg", qty: 30, pharmacy: "HealthPlus Pharmacy", date: "2026-03-21", status: "Pending", price: 320 },
-    { id: "ORD-1003", medicine: "Vitamin D3", qty: 15, pharmacy: "LifeMed Store", date: "2026-03-22", status: "Shipped", price: 250 },
-    { id: "ORD-1004", medicine: "Amoxicillin 250mg", qty: 10, pharmacy: "CityCare Pharmacy", date: "2026-03-22", status: "Delivered", price: 210 },
-    { id: "ORD-1005", medicine: "Aspirin 75mg", qty: 30, pharmacy: "MediHub", date: "2026-03-23", status: "Ordered", price: 160 },
-    { id: "ORD-1006", medicine: "Insulin Pen", qty: 2, pharmacy: "Apollo Care", date: "2026-03-24", status: "Delivered", price: 900 }
-];
+requireAuth();
 
+let orderData = [];
 const ordersContainer = document.getElementById("ordersContainer");
 const searchInput = document.getElementById("searchInput");
 const statusFilter = document.getElementById("statusFilter");
@@ -294,7 +289,7 @@ function updateStats() {
     const allCount = orderData.length;
     const orderedCount = orderData.filter(item => item.status === "Ordered").length;
     const deliveredCount = orderData.filter(item => item.status === "Delivered").length;
-    const pendingCount = allCount - deliveredCount - orderedCount;
+    const pendingCount = orderData.filter(item => item.status !== "Delivered" && item.status !== "Ordered").length;
 
     document.getElementById("allCount").textContent = allCount;
     document.getElementById("orderedCount").textContent = orderedCount;
@@ -310,8 +305,9 @@ function statusClass(status) {
 }
 
 function formatDate(dateText) {
-    const d = new Date(dateText + "T00:00:00");
-    return d.toLocaleDateString();
+    if (!dateText) return "-";
+    const d = new Date(dateText.slice(0, 10) + "T00:00:00");
+    return isNaN(d) ? dateText : d.toLocaleDateString();
 }
 
 function getFilteredOrders() {
@@ -321,9 +317,9 @@ function getFilteredOrders() {
     return orderData.filter(order => {
         const matchTab = activeTab === "all" ? true : order.status === "Ordered";
         const matchSearch =
-            order.medicine.toLowerCase().includes(query) ||
-            order.pharmacy.toLowerCase().includes(query) ||
-            order.id.toLowerCase().includes(query);
+            (order.medicineName || "").toLowerCase().includes(query) ||
+            (order.pharmacy || "").toLowerCase().includes(query) ||
+            (order.orderRef || "").toLowerCase().includes(query);
         const matchStatus = selectedStatus === "all" ? true : order.status === selectedStatus;
         return matchTab && matchSearch && matchStatus;
     });
@@ -343,15 +339,25 @@ function renderOrders() {
         card.className = "order-card";
         card.innerHTML = `
             <div class="row">
-                <h3 class="medicine-name">${order.medicine}</h3>
+                <h3 class="medicine-name">${order.medicineName}</h3>
                 <span class="badge ${statusClass(order.status)}">${order.status}</span>
             </div>
-            <div class="meta">Order ID: ${order.id}</div>
-            <div class="meta">Quantity: ${order.qty} | Pharmacy: ${order.pharmacy}</div>
-            <div class="meta">Ordered Date: ${formatDate(order.date)} | Amount: Rs. ${order.price}</div>
+            <div class="meta">Order Ref: ${order.orderRef}</div>
+            <div class="meta">Quantity: ${order.qty} | Pharmacy: ${order.pharmacy || "Not assigned"}</div>
+            <div class="meta">Ordered Date: ${formatDate(order.orderDate)} | Amount: Rs. ${order.price || 0}</div>
         `;
         ordersContainer.appendChild(card);
     });
+}
+
+async function loadOrders() {
+    try {
+        orderData = await api("GET", "/orders");
+        updateStats();
+        renderOrders();
+    } catch (err) {
+        ordersContainer.innerHTML = '<div class="empty">Failed to load orders.</div>';
+    }
 }
 
 tabs.forEach(tab => {
@@ -366,8 +372,7 @@ tabs.forEach(tab => {
 searchInput.addEventListener("input", renderOrders);
 statusFilter.addEventListener("change", renderOrders);
 
-updateStats();
-renderOrders();
+loadOrders();
 </script>
 </body>
 </html>

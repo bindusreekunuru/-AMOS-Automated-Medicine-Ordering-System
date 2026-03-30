@@ -247,6 +247,7 @@ nav a:hover{
         <a href="order.html">Orders</a>
         <a href="Medicine.html">Medicines</a>
         <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
     </nav>
 </header>
 
@@ -279,11 +280,11 @@ nav a:hover{
                     </div>
                     <div class="field">
                         <label for="username">Username</label>
-                        <input id="username" type="text" required>
+                        <input id="username" type="text" readonly style="background:#f3f4f6; color:#6b7280; cursor:not-allowed;">
                     </div>
                     <div class="field">
                         <label for="email">Email</label>
-                        <input id="email" type="email" required>
+                        <input id="email" type="email" readonly style="background:#f3f4f6; color:#6b7280; cursor:not-allowed;">
                     </div>
                     <div class="field">
                         <label for="phone">Phone</label>
@@ -366,33 +367,15 @@ nav a:hover{
     </div>
 </div>
 
+<script src="api.js"></script>
 <script>
-const storageKey = "amosUserProfile";
-
-const defaultProfile = {
-    fullName: "User Name",
-    username: "user123",
-    email: "user@email.com",
-    phone: "9876543210",
-    age: "30",
-    gender: "Male",
-    bloodGroup: "O+",
-    city: "Chennai",
-    address: "123 Main Street, Chennai",
-    allergies: "None",
-    conditions: "None",
-    emergencyName: "Family Member",
-    emergencyRelation: "Sibling",
-    emergencyPhone: "9123456789"
-};
+requireAuth();
 
 const form = document.getElementById("profileForm");
 const resetBtn = document.getElementById("resetBtn");
 const statusText = document.getElementById("statusText");
 
-function getProfile() {
-    return JSON.parse(localStorage.getItem(storageKey)) || defaultProfile;
-}
+let currentProfile = null;
 
 function setInputValue(id, value) {
     document.getElementById(id).value = value || "";
@@ -404,8 +387,8 @@ function fillForm(profile) {
     setInputValue("email", profile.email);
     setInputValue("phone", profile.phone);
     setInputValue("age", profile.age);
-    setInputValue("gender", profile.gender);
-    setInputValue("bloodGroup", profile.bloodGroup);
+    setInputValue("gender", profile.gender || "Male");
+    setInputValue("bloodGroup", profile.bloodGroup || "O+");
     setInputValue("city", profile.city);
     setInputValue("address", profile.address);
     setInputValue("allergies", profile.allergies);
@@ -430,10 +413,8 @@ function syncProfileCard(profile) {
 function collectFormData() {
     return {
         fullName: document.getElementById("fullName").value.trim(),
-        username: document.getElementById("username").value.trim(),
-        email: document.getElementById("email").value.trim(),
         phone: document.getElementById("phone").value.trim(),
-        age: document.getElementById("age").value.trim(),
+        age: document.getElementById("age").value.trim() ? Number(document.getElementById("age").value.trim()) : null,
         gender: document.getElementById("gender").value,
         bloodGroup: document.getElementById("bloodGroup").value,
         city: document.getElementById("city").value.trim(),
@@ -447,36 +428,55 @@ function collectFormData() {
 }
 
 function isTenDigits(value) {
+    if (!value) return true; // allow empty for optional fields, though phone usually required
     return /^[0-9]{10}$/.test(value);
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const profile = collectFormData();
+    const updateData = collectFormData();
 
-    if (!isTenDigits(profile.phone) || !isTenDigits(profile.emergencyPhone)) {
+    if (!isTenDigits(updateData.phone) || (updateData.emergencyPhone && !isTenDigits(updateData.emergencyPhone))) {
         statusText.style.color = "#b91c1c";
         statusText.textContent = "Phone numbers must be exactly 10 digits.";
         return;
     }
 
-    localStorage.setItem(storageKey, JSON.stringify(profile));
-    syncProfileCard(profile);
-    statusText.style.color = "#0f766e";
-    statusText.textContent = "Profile saved successfully.";
+    statusText.style.color = "#64748b";
+    statusText.textContent = "Saving profile...";
+
+    try {
+        const updated = await api("PUT", "/profile", updateData);
+        currentProfile = { ...currentProfile, ...updated };
+        syncProfileCard(currentProfile);
+        statusText.style.color = "#0f766e";
+        statusText.textContent = "Profile saved successfully.";
+    } catch (err) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = err.message || "Failed to save profile.";
+    }
 });
 
-resetBtn.addEventListener("click", () => {
-    localStorage.removeItem(storageKey);
-    fillForm(defaultProfile);
-    syncProfileCard(defaultProfile);
+resetBtn.addEventListener("click", async () => {
+    statusText.style.color = "#64748b";
+    statusText.textContent = "Reloading profile...";
+    await loadProfile();
     statusText.style.color = "#1d4ed8";
-    statusText.textContent = "Profile reset to default values.";
+    statusText.textContent = "Profile reloaded from server.";
 });
 
-const initialProfile = getProfile();
-fillForm(initialProfile);
-syncProfileCard(initialProfile);
+async function loadProfile() {
+    try {
+        currentProfile = await api("GET", "/profile");
+        fillForm(currentProfile);
+        syncProfileCard(currentProfile);
+    } catch (err) {
+        statusText.style.color = "#b91c1c";
+        statusText.textContent = "Failed to load profile.";
+    }
+}
+
+loadProfile();
 </script>
 </body>
 </html>

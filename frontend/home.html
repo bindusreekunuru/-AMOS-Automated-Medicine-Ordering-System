@@ -252,31 +252,32 @@ input[type="file"]{
         <a href="order.html">Orders</a>
         <a href="Medicine.html">Medicines</a>
         <a href="profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
     </nav>
 </header>
 
 <div class="container">
     <section class="hero">
-        <h1 class="greeting" id="welcomeGreeting">Welcome back, User!</h1>
+        <h1 class="greeting" id="welcomeGreeting">Welcome back!</h1>
         <p class="subtext">Manage prescriptions, keep medicine stock updated, and avoid missed doses.</p>
     </section>
 
     <section class="stats-grid">
         <article class="stat-card">
             <div class="stat-title">Active Medicines</div>
-                <div class="stat-value" id="activeMedicines">0</div>
+            <div class="stat-value" id="activeMedicines">0</div>
         </article>
         <article class="stat-card">
             <div class="stat-title">Today's Reminders</div>
-                <div class="stat-value" id="todayReminders">0</div>
+            <div class="stat-value" id="todayReminders">0</div>
         </article>
         <article class="stat-card">
             <div class="stat-title">Low Stock Items</div>
-                <div class="stat-value" id="lowStock">0</div>
+            <div class="stat-value" id="lowStock">0</div>
         </article>
         <article class="stat-card">
             <div class="stat-title">Pending Orders</div>
-                <div class="stat-value" id="pendingOrders">0</div>
+            <div class="stat-value" id="pendingOrders">0</div>
         </article>
     </section>
 
@@ -331,100 +332,79 @@ input[type="file"]{
                 <li>Use notes to track food restrictions and timings.</li>
             </ul>
 
-            <div class="reminder-preview">
+            <div class="reminder-preview" id="reminderPreview">
                 <h3>Upcoming Dose Preview</h3>
-                <div class="reminder-item"><strong>Paracetamol</strong> - 08:00 AM (Today)</div>
-                <div class="reminder-item"><strong>Vitamin D</strong> - 01:00 PM (Today)</div>
-                <div class="reminder-item"><strong>Metformin</strong> - 08:30 PM (Today)</div>
+                <div class="reminder-item">Loading...</div>
             </div>
         </div>
     </section>
 </div>
 
+<script src="api.js"></script>
 <script>
-const medicineForm = document.getElementById("medicineForm");
-const formStatus = document.getElementById("formStatus");
-const uploadBtn = document.getElementById("uploadBtn");
-const cameraBtn = document.getElementById("cameraBtn");
-const uploadFile = document.getElementById("uploadFile");
-const cameraInput = document.getElementById("cameraInput");
-const fileName = document.getElementById("fileName");
-const reminderPreview = document.querySelector(".reminder-preview");
-const welcomeGreeting = document.getElementById("welcomeGreeting");
+requireAuth();
 
-const medicineStorageKey = "amosMedicines";
-const remindersStorageKey = "amosReminders";
-const profileStorageKey = "amosUserProfile";
-const ordersStorageKey = "amosOrders";
+var medicineForm = document.getElementById("medicineForm");
+var formStatus = document.getElementById("formStatus");
+var uploadBtn = document.getElementById("uploadBtn");
+var cameraBtn = document.getElementById("cameraBtn");
+var uploadFile = document.getElementById("uploadFile");
+var cameraInput = document.getElementById("cameraInput");
+var fileName = document.getElementById("fileName");
+var reminderPreview = document.getElementById("reminderPreview");
+var welcomeGreeting = document.getElementById("welcomeGreeting");
 
-<!-- ✅ FIXED FORM -->
-<form onsubmit="event.preventDefault(); submitPrescription();">
+// Load dashboard data from API
+async function loadDashboard() {
+    try {
+        var data = await api("GET", "/dashboard");
 
-<input id="medicine" type="text" placeholder="Medicine Name" required>
+        document.getElementById("activeMedicines").textContent = data.activeMedicines;
+        document.getElementById("todayReminders").textContent = data.todayReminders;
+        document.getElementById("lowStock").textContent = data.lowStock;
+        document.getElementById("pendingOrders").textContent = data.pendingOrders;
 
-<input id="dosage" type="number" placeholder="Dosage per day" required>
-
-<input id="days" type="number" placeholder="Duration (days)" required>
-
-<textarea id="notes" placeholder="Additional Notes"></textarea>
-
-function stockDaysLeft(item) {
-    const dosage = Number(item.dosagePerDay || 1);
-    const quantity = Number(item.tabletsQty || 0);
-    return dosage > 0 ? Math.floor(quantity / dosage) : quantity;
-}
-
-function renderStatsAndGreeting() {
-    const medicines = getJsonArray(medicineStorageKey);
-    const reminders = getJsonArray(remindersStorageKey);
-    const orders = getJsonArray(ordersStorageKey);
-    const profile = JSON.parse(localStorage.getItem(profileStorageKey)) || null;
-
-<!-- ✅ VIEW BUTTON -->
-<button onclick="loadPrescriptions()">View Saved Prescriptions</button>
-
-<!-- ✅ OUTPUT AREA -->
-<div id="output" style="margin-top:15px;"></div>
-
-<div class="upload-section">
-
-    document.getElementById("activeMedicines").textContent = medicines.length;
-    document.getElementById("todayReminders").textContent = todayReminderCount;
-    document.getElementById("lowStock").textContent = lowStockCount;
-    document.getElementById("pendingOrders").textContent = pendingOrdersCount;
-
-    if (profile && profile.fullName) {
-        welcomeGreeting.textContent = "Welcome back, " + profile.fullName + "!";
+        // Render upcoming reminders
+        reminderPreview.innerHTML = "<h3>Upcoming Dose Preview</h3>";
+        if (data.upcomingReminders && data.upcomingReminders.length > 0) {
+            data.upcomingReminders.forEach(function (item) {
+                var div = document.createElement("div");
+                div.className = "reminder-item";
+                div.innerHTML = "<strong>" + item.medicineName + "</strong> - " + item.time + " (" + item.date + ")";
+                reminderPreview.appendChild(div);
+            });
+        } else {
+            reminderPreview.innerHTML += '<div class="reminder-item">No upcoming reminders.</div>';
+        }
+    } catch (err) {
+        console.error("Dashboard load error:", err);
     }
 }
 
-function renderReminderPreview() {
-    const reminders = getJsonArray(remindersStorageKey)
-        .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
-        .slice(0, 3);
-
-    reminderPreview.innerHTML = "<h3>Upcoming Dose Preview</h3>";
-    if (reminders.length === 0) {
-        reminderPreview.innerHTML += '<div class="reminder-item">No reminders available.</div>';
-        return;
+// Load user greeting
+async function loadGreeting() {
+    try {
+        var user = await api("GET", "/auth/me");
+        if (user && user.fullName) {
+            welcomeGreeting.textContent = "Welcome back, " + user.fullName + "!";
+        }
+    } catch (err) {
+        var cached = getUser();
+        if (cached && cached.fullName) {
+            welcomeGreeting.textContent = "Welcome back, " + cached.fullName + "!";
+        }
     }
-
-    reminders.forEach((item) => {
-        const previewItem = document.createElement("div");
-        previewItem.className = "reminder-item";
-        previewItem.innerHTML = "<strong>" + item.medicineName + "</strong> - " + item.time + " (" + item.date + ")";
-        reminderPreview.appendChild(previewItem);
-    });
 }
 
-medicineForm.addEventListener("submit", (event) => {
+// Medicine form submit
+medicineForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const medicineName = document.getElementById("medicineName").value.trim();
-    const dosagePerDay = Number(document.getElementById("dosagePerDay").value);
-    const tabletsQty = Number(document.getElementById("tabletsQty").value);
-    const reorderLevel = document.getElementById("reorderLevel").value;
-    const notes = document.getElementById("notes").value.trim();
+    var medicineName = document.getElementById("medicineName").value.trim();
+    var dosagePerDay = Number(document.getElementById("dosagePerDay").value);
+    var tabletsQty = Number(document.getElementById("tabletsQty").value);
+    var reorderLevel = document.getElementById("reorderLevel").value;
+    var notes = document.getElementById("notes").value.trim();
 
     if (!medicineName || dosagePerDay < 1 || tabletsQty < 1) {
         formStatus.style.color = "#b91c1c";
@@ -432,8 +412,62 @@ medicineForm.addEventListener("submit", (event) => {
         return;
     }
 
-<!-- ✅ CORRECT SCRIPT PLACEMENT -->
-<script src="script.js"></script>
+    formStatus.style.color = "#64748b";
+    formStatus.textContent = "Saving...";
 
+    try {
+        await api("POST", "/medicines", {
+            medicineName: medicineName,
+            dosagePerDay: dosagePerDay,
+            tabletsQty: tabletsQty,
+            reorderLevel: Number(reorderLevel),
+            notes: notes
+        });
+        formStatus.style.color = "#0f766e";
+        formStatus.textContent = "Medicine saved successfully!";
+        medicineForm.reset();
+        loadDashboard();
+    } catch (err) {
+        formStatus.style.color = "#b91c1c";
+        formStatus.textContent = err.message || "Failed to save medicine.";
+    }
+});
+
+// Prescription upload
+uploadBtn.addEventListener("click", function () { uploadFile.click(); });
+cameraBtn.addEventListener("click", function () { cameraInput.click(); });
+
+async function handleFileUpload(file) {
+    if (!file) return;
+    fileName.textContent = file.name;
+
+    var formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        var token = getToken();
+        var res = await fetch(API_BASE + "/prescriptions/upload", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token },
+            body: formData
+        });
+        if (res.ok) {
+            fileName.textContent = file.name + " — Uploaded successfully!";
+        } else {
+            var data = await res.json();
+            fileName.textContent = "Upload failed: " + (data.error || "Unknown error");
+        }
+    } catch (err) {
+        fileName.textContent = "Upload failed: " + err.message;
+    }
+}
+
+uploadFile.addEventListener("change", function () { handleFileUpload(this.files[0]); });
+cameraInput.addEventListener("change", function () { handleFileUpload(this.files[0]); });
+
+// Initialize
+loadGreeting();
+loadDashboard();
+</script>
 </body>
 </html>
