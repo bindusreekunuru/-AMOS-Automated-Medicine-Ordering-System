@@ -5,41 +5,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AMOS - Medicines</title>
 <style>
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary: #ecfdf5;
+    --secondary-text: #059669;
+    --bg-color: #f3f4f6;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --warning: #f59e0b;
+    --warning-hover: #d97706;
+}
+
 body{
     margin:0;
-    font-family: Arial, sans-serif;
-    background:#f4f6f9;
-    color:#1f2937;
+    font-family: 'Inter', Arial, sans-serif;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: var(--text-main);
+    min-height: 100vh;
 }
 
 header{
-    background:#2c3e50;
-    color:white;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    color: var(--text-main);
     padding:15px 40px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .logo{
-    font-size:22px;
-    font-weight:bold;
+    font-size:24px;
+    font-weight:800;
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 nav a{
-    color:white;
+    color:#1f2937;
     text-decoration:none;
-    margin-left:20px;
+    margin-left:24px;
+    font-weight: 500;
+    transition: all 0.2s;
+    padding: 8px 12px;
+    border-radius: 8px;
 }
 
 nav a:hover{
-    text-decoration:underline;
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
 }
 
 .container{
     max-width:1100px;
     margin:0 auto;
-    padding:30px 24px 48px;
+    padding:40px;
 }
 
 .title{
@@ -61,10 +90,18 @@ nav a:hover{
 }
 
 .top-bar input, .top-bar select{
-    border:1px solid #cbd5e1;
-    border-radius:6px;
-    padding:10px;
-    font-size:14px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:15px;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s;
+}
+
+.top-bar input:focus, .top-bar select:focus{
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
 .top-bar input{
@@ -80,10 +117,18 @@ nav a:hover{
 }
 
 .stat{
-    background:white;
-    border-radius:8px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.08);
-    padding:14px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius:16px;
+    padding:20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat:hover{
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
 .stat-label{
@@ -104,11 +149,18 @@ nav a:hover{
 }
 
 .med-card{
-    background:white;
-    border:1px solid #e5e7eb;
-    border-radius:8px;
-    padding:14px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius:16px;
+    padding:20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.med-card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .med-head{
@@ -161,14 +213,17 @@ nav a:hover{
     border:none;
     background:#ef4444;
     color:white;
-    padding:7px 10px;
-    border-radius:6px;
+    padding:8px 14px;
+    border-radius:8px;
     cursor:pointer;
     font-size:13px;
+    font-weight:600;
+    transition: background 0.2s, transform 0.2s;
 }
 
 .delete-btn:hover{
     background:#dc2626;
+    transform: translateY(-1px);
 }
 
 .empty{
@@ -214,17 +269,18 @@ nav a:hover{
     }
 }
 </style>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 <header>
-    <div class="logo">AMOS - Automatic Medicine Ordering System</div>
+    <div class="logo"><i class="fa-solid fa-pills" style="margin-right: 8px;"></i>AMOS</div>
     <nav>
-        <a href="home.html">Home</a>
-        <a href="Reminders.html">Reminders</a>
-        <a href="order.html">Orders</a>
-        <a href="Medicine.html">Medicines</a>
-        <a href="profile.html">Profile</a>
-        <a href="#" onclick="logout()">Logout</a>
+        <a href="home.html"><i class="fa-solid fa-house"></i> Home</a>
+        <a href="Reminders.html"><i class="fa-solid fa-bell"></i> Reminders</a>
+        <a href="order.html"><i class="fa-solid fa-cart-shopping"></i> Orders</a>
+        <a href="Medicine.html" style="color: var(--primary); background: rgba(79, 70, 229, 0.1);"><i class="fa-solid fa-capsules"></i> Medicines</a>
+        <a href="profile.html"><i class="fa-solid fa-user"></i> Profile</a>
+        <a href="#" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </nav>
 </header>
 

@@ -8,75 +8,95 @@ const router = express.Router();
 router.use(authenticate);
 
 // ── GET /api/profile ────────────────────────────────────────────────────────
-router.get("/", (req, res) => {
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+router.get("/", async (req, res) => {
+  try {
+    const userResult = await db.query(
+      "SELECT * FROM users WHERE id = $1",
+      [req.user.id]
+    );
 
-  if (!user) {
-    return res.status(404).json({ error: "User not found." });
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.json(normalise(userResult.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json(normalise(user));
 });
 
 // ── PUT /api/profile ────────────────────────────────────────────────────────
-router.put("/", (req, res) => {
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
-  if (!user) {
-    return res.status(404).json({ error: "User not found." });
+router.put("/", async (req, res) => {
+  try {
+    const userResult = await db.query(
+      "SELECT * FROM users WHERE id = $1",
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const user = userResult.rows[0];
+
+    const {
+      fullName,
+      phone,
+      age,
+      gender,
+      city,
+      address,
+      bloodGroup,
+      allergies,
+      conditions,
+      emergencyName,
+      emergencyRelation,
+      emergencyPhone,
+    } = req.body;
+
+    const updatedResult = await db.query(
+      `UPDATE users SET
+         full_name          = $1,
+         phone              = $2,
+         age                = $3,
+         gender             = $4,
+         city               = $5,
+         address            = $6,
+         blood_group        = $7,
+         allergies          = $8,
+         conditions         = $9,
+         emergency_name     = $10,
+         emergency_relation = $11,
+         emergency_phone    = $12
+       WHERE id = $13 RETURNING *`,
+      [
+        fullName ?? user.full_name,
+        phone ?? user.phone,
+        age ?? user.age,
+        gender ?? user.gender,
+        city ?? user.city,
+        address ?? user.address,
+        bloodGroup ?? user.blood_group,
+        allergies ?? user.allergies,
+        conditions ?? user.conditions,
+        emergencyName ?? user.emergency_name,
+        emergencyRelation ?? user.emergency_relation,
+        emergencyPhone ?? user.emergency_phone,
+        req.user.id
+      ]
+    );
+
+    res.json({ message: "Profile updated.", profile: normalise(updatedResult.rows[0]) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  const {
-    fullName,
-    phone,
-    age,
-    gender,
-    city,
-    address,
-    bloodGroup,
-    allergies,
-    conditions,
-    emergencyName,
-    emergencyRelation,
-    emergencyPhone,
-  } = req.body;
-
-  db.prepare(
-    `UPDATE users SET
-       full_name          = ?,
-       phone              = ?,
-       age                = ?,
-       gender             = ?,
-       city               = ?,
-       address            = ?,
-       blood_group        = ?,
-       allergies          = ?,
-       conditions         = ?,
-       emergency_name     = ?,
-       emergency_relation = ?,
-       emergency_phone    = ?
-     WHERE id = ?`
-  ).run(
-    fullName ?? user.full_name,
-    phone ?? user.phone,
-    age ?? user.age,
-    gender ?? user.gender,
-    city ?? user.city,
-    address ?? user.address,
-    bloodGroup ?? user.blood_group,
-    allergies ?? user.allergies,
-    conditions ?? user.conditions,
-    emergencyName ?? user.emergency_name,
-    emergencyRelation ?? user.emergency_relation,
-    emergencyPhone ?? user.emergency_phone,
-    req.user.id
-  );
-
-  const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
-  res.json({ message: "Profile updated.", profile: normalise(updated) });
 });
 
 // Helper: snake_case → camelCase
 function normalise(row) {
+  if (!row) return null;
   return {
     id: row.id,
     username: row.username,

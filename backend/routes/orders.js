@@ -8,121 +8,159 @@ const router = express.Router();
 router.use(authenticate);
 
 // ── GET /api/orders ─────────────────────────────────────────────────────────
-router.get("/", (req, res) => {
-  const orders = db
-    .prepare("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC")
-    .all(req.user.id);
+router.get("/", async (req, res) => {
+  try {
+    const orders = await db.query(
+      "SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC",
+      [req.user.id]
+    );
 
-  res.json(orders.map(normalise));
+    res.json(orders.rows.map(normalise));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── GET /api/orders/stats ───────────────────────────────────────────────────
-router.get("/stats", (req, res) => {
-  const orders = db
-    .prepare("SELECT * FROM orders WHERE user_id = ?")
-    .all(req.user.id);
+router.get("/stats", async (req, res) => {
+  try {
+    const orders = await db.query(
+      "SELECT * FROM orders WHERE user_id = $1",
+      [req.user.id]
+    );
 
-  const total = orders.length;
-  const ordered = orders.filter((o) => o.status === "Ordered").length;
-  const delivered = orders.filter((o) => o.status === "Delivered").length;
-  const pending = total - ordered - delivered;
+    const total = orders.rows.length;
+    const ordered = orders.rows.filter((o) => o.status === "Ordered").length;
+    const delivered = orders.rows.filter((o) => o.status === "Delivered").length;
+    const pending = total - ordered - delivered;
 
-  res.json({ total, ordered, delivered, pending });
+    res.json({ total, ordered, delivered, pending });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── POST /api/orders ────────────────────────────────────────────────────────
-router.post("/", (req, res) => {
-  const { medicineName, qty, pharmacy, status, price, orderDate } = req.body;
+router.post("/", async (req, res) => {
+  try {
+    const { medicineName, qty, pharmacy, status, price, orderDate } = req.body;
 
-  if (!medicineName) {
-    return res
-      .status(400)
-      .json({ error: "medicineName is required." });
-  }
+    if (!medicineName) {
+      return res
+        .status(400)
+        .json({ error: "medicineName is required." });
+    }
 
-  // Auto-generate order reference
-  const count = db
-    .prepare("SELECT COUNT(*) as c FROM orders WHERE user_id = ?")
-    .get(req.user.id).c;
+    // Auto-generate order reference
+    const countResult = await db.query(
+      "SELECT COUNT(*) as c FROM orders WHERE user_id = $1",
+      [req.user.id]
+    );
+    const count = parseInt(countResult.rows[0].c, 10);
 
-  const orderRef = `ORD-${1001 + count}`;
+    const orderRef = `ORD-${1001 + count}`;
 
-  const result = db
-    .prepare(
+    const result = await db.query(
       `INSERT INTO orders (user_id, order_ref, medicine_name, qty, pharmacy, status, price, order_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      req.user.id,
-      orderRef,
-      medicineName,
-      Number(qty) || 1,
-      pharmacy || "",
-      status || "Pending",
-      Number(price) || 0,
-      orderDate || new Date().toISOString().slice(0, 10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        req.user.id,
+        orderRef,
+        medicineName,
+        Number(qty) || 1,
+        pharmacy || "",
+        status || "Pending",
+        Number(price) || 0,
+        orderDate || new Date().toISOString().slice(0, 10)
+      ]
     );
 
-  const created = db
-    .prepare("SELECT * FROM orders WHERE id = ?")
-    .get(result.lastInsertRowid);
+    // Auto-restock the medicine corresponding to this order
+    try {
+      await db.query(
+        "UPDATE medicines SET tablets_qty = tablets_qty + $1 WHERE user_id = $2 AND medicine_name = $3",
+        [Number(qty) || 1, req.user.id, medicineName]
+      );
+    } catch (restockErr) {
+      console.error("Failed to auto-restock medicine:", restockErr);
+    }
 
-  res.status(201).json(normalise(created));
+    res.status(201).json(normalise(result.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── PUT /api/orders/:id ─────────────────────────────────────────────────────
-router.put("/:id", (req, res) => {
-  const { id } = req.params;
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const existing = db
-    .prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
+    const existingResult = await db.query(
+      "SELECT * FROM orders WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
 
-  if (!existing) {
-    return res.status(404).json({ error: "Order not found." });
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    const existing = existingResult.rows[0];
+    const { medicineName, qty, pharmacy, status, price } = req.body;
+
+    const updatedResult = await db.query(
+      `UPDATE orders SET
+         medicine_name = $1,
+         qty           = $2,
+         pharmacy      = $3,
+         status        = $4,
+         price         = $5
+       WHERE id = $6 RETURNING *`,
+      [
+        medicineName ?? existing.medicine_name,
+        qty !== undefined ? Number(qty) : existing.qty,
+        pharmacy ?? existing.pharmacy,
+        status ?? existing.status,
+        price !== undefined ? Number(price) : existing.price,
+        id
+      ]
+    );
+
+    res.json(normalise(updatedResult.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  const { medicineName, qty, pharmacy, status, price } = req.body;
-
-  db.prepare(
-    `UPDATE orders SET
-       medicine_name = ?,
-       qty           = ?,
-       pharmacy      = ?,
-       status        = ?,
-       price         = ?
-     WHERE id = ?`
-  ).run(
-    medicineName ?? existing.medicine_name,
-    qty !== undefined ? Number(qty) : existing.qty,
-    pharmacy ?? existing.pharmacy,
-    status ?? existing.status,
-    price !== undefined ? Number(price) : existing.price,
-    id
-  );
-
-  const updated = db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
-  res.json(normalise(updated));
 });
 
 // ── DELETE /api/orders/:id ──────────────────────────────────────────────────
-router.delete("/:id", (req, res) => {
-  const { id } = req.params;
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const existing = db
-    .prepare("SELECT * FROM orders WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
+    const existingResult = await db.query(
+      "SELECT * FROM orders WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
 
-  if (!existing) {
-    return res.status(404).json({ error: "Order not found." });
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+
+    await db.query("DELETE FROM orders WHERE id = $1", [id]);
+    res.json({ success: true, id: Number(id) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  db.prepare("DELETE FROM orders WHERE id = ?").run(id);
-  res.json({ success: true, id: Number(id) });
 });
 
 // Helper: snake_case → camelCase
 function normalise(row) {
+  if (!row) return null;
   return {
     id: row.id,
     userId: row.user_id,

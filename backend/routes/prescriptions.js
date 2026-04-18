@@ -40,56 +40,68 @@ const upload = multer({
 });
 
 // ── POST /api/prescriptions/upload ──────────────────────────────────────────
-router.post("/upload", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded." });
-  }
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded." });
+    }
 
-  const result = db
-    .prepare(
+    const result = await db.query(
       `INSERT INTO prescriptions (user_id, file_name, file_path)
-       VALUES (?, ?, ?)`
-    )
-    .run(req.user.id, req.file.originalname, req.file.filename);
+       VALUES ($1, $2, $3) RETURNING *`,
+      [req.user.id, req.file.originalname, req.file.filename]
+    );
 
-  const created = db
-    .prepare("SELECT * FROM prescriptions WHERE id = ?")
-    .get(result.lastInsertRowid);
-
-  res.status(201).json(normalise(created));
+    res.status(201).json(normalise(result.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── GET /api/prescriptions ──────────────────────────────────────────────────
-router.get("/", (req, res) => {
-  const prescriptions = db
-    .prepare(
-      "SELECT * FROM prescriptions WHERE user_id = ? ORDER BY uploaded_at DESC"
-    )
-    .all(req.user.id);
+router.get("/", async (req, res) => {
+  try {
+    const prescriptions = await db.query(
+      "SELECT * FROM prescriptions WHERE user_id = $1 ORDER BY uploaded_at DESC",
+      [req.user.id]
+    );
 
-  res.json(prescriptions.map(normalise));
+    res.json(prescriptions.rows.map(normalise));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── DELETE /api/prescriptions/:id ───────────────────────────────────────────
-router.delete("/:id", (req, res) => {
-  const { id } = req.params;
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const existing = db
-    .prepare("SELECT * FROM prescriptions WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
+    const existingResult = await db.query(
+      "SELECT * FROM prescriptions WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
 
-  if (!existing) {
-    return res.status(404).json({ error: "Prescription not found." });
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Prescription not found." });
+    }
+
+    const existing = existingResult.rows[0];
+
+    // Delete file from disk
+    const filePath = path.join(uploadsDir, existing.file_path);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    await db.query("DELETE FROM prescriptions WHERE id = $1", [id]);
+    res.json({ success: true, id: Number(id) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  // Delete file from disk
-  const filePath = path.join(uploadsDir, existing.file_path);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
-  }
-
-  db.prepare("DELETE FROM prescriptions WHERE id = ?").run(id);
-  res.json({ success: true, id: Number(id) });
 });
 
 // Multer error handler
@@ -105,6 +117,7 @@ router.use((err, req, res, next) => {
 
 // Helper: normalise row
 function normalise(row) {
+  if (!row) return null;
   return {
     id: row.id,
     userId: row.user_id,

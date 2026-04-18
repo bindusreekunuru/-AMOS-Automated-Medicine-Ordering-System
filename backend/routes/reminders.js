@@ -8,101 +8,162 @@ const router = express.Router();
 router.use(authenticate);
 
 // GET /api/reminders
-router.get("/", (req, res) => {
-  const reminders = db
-    .prepare("SELECT * FROM reminders WHERE user_id = ? ORDER BY date ASC, time ASC")
-    .all(req.user.id);
-  res.json(reminders.map(normalise));
+router.get("/", async (req, res) => {
+  try {
+    const reminders = await db.query(
+      "SELECT * FROM reminders WHERE user_id = $1 ORDER BY date ASC, time ASC",
+      [req.user.id]
+    );
+    res.json(reminders.rows.map(normalise));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // POST /api/reminders
-router.post("/", (req, res) => {
-  const { medicineName, date, time, frequency = "Daily", note = "" } = req.body;
+router.post("/", async (req, res) => {
+  try {
+    const { medicineName, date, time, frequency = "Daily", note = "" } = req.body;
 
-  if (!medicineName || !date || !time) {
-    return res.status(400).json({ error: "medicineName, date, and time are required." });
-  }
+    if (!medicineName || !date || !time) {
+      return res.status(400).json({ error: "medicineName, date, and time are required." });
+    }
 
-  const result = db
-    .prepare(
+    const result = await db.query(
       `INSERT INTO reminders (user_id, medicine_name, date, time, frequency, note)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    )
-    .run(req.user.id, medicineName, date, time, frequency, note);
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [req.user.id, medicineName, date, time, frequency, note]
+    );
 
-  const created = db.prepare("SELECT * FROM reminders WHERE id = ?").get(result.lastInsertRowid);
-  res.status(201).json(normalise(created));
+    res.status(201).json(normalise(result.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // PUT /api/reminders/:id
-router.put("/:id", (req, res) => {
-  const { medicineName, date, time, frequency, note, done } = req.body;
-  const { id } = req.params;
+router.put("/:id", async (req, res) => {
+  try {
+    const { medicineName, date, time, frequency, note, done } = req.body;
+    const { id } = req.params;
 
-  const existing = db
-    .prepare("SELECT * FROM reminders WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
-  if (!existing) return res.status(404).json({ error: "Reminder not found." });
+    const existingResult = await db.query(
+      "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Reminder not found." });
+    }
 
-  db.prepare(
-    `UPDATE reminders
-     SET medicine_name = ?,
-         date          = ?,
-         time          = ?,
-         frequency     = ?,
-         note          = ?,
-         done          = ?,
-         notified      = CASE WHEN date != ? OR time != ? THEN 0 ELSE notified END
-     WHERE id = ?`
-  ).run(
-    medicineName ?? existing.medicine_name,
-    date ?? existing.date,
-    time ?? existing.time,
-    frequency ?? existing.frequency,
-    note ?? existing.note,
-    done !== undefined ? (done ? 1 : 0) : existing.done,
-    date ?? existing.date,
-    time ?? existing.time,
-    id
-  );
+    const existing = existingResult.rows[0];
 
-  const row = db.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-  res.json(normalise(row));
+    const updatedResult = await db.query(
+      `UPDATE reminders
+       SET medicine_name = $1,
+           date          = $2,
+           time          = $3,
+           frequency     = $4,
+           note          = $5,
+           done          = $6,
+           notified      = CASE WHEN date != $7 OR time != $8 THEN 0 ELSE notified END
+       WHERE id = $9 RETURNING *`,
+      [
+        medicineName ?? existing.medicine_name,
+        date ?? existing.date,
+        time ?? existing.time,
+        frequency ?? existing.frequency,
+        note ?? existing.note,
+        done !== undefined ? (done ? 1 : 0) : existing.done,
+        date ?? existing.date,
+        time ?? existing.time,
+        id
+      ]
+    );
+
+    res.json(normalise(updatedResult.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // PATCH /api/reminders/:id/toggle
-router.patch("/:id/toggle", (req, res) => {
-  const { id } = req.params;
-  const existing = db
-    .prepare("SELECT * FROM reminders WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
-  if (!existing) return res.status(404).json({ error: "Reminder not found." });
+router.patch("/:id/toggle", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existingResult = await db.query(
+      "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
 
-  db.prepare("UPDATE reminders SET done = ? WHERE id = ?").run(existing.done ? 0 : 1, id);
-  const row = db.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-  res.json(normalise(row));
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Reminder not found." });
+    }
+
+    const existing = existingResult.rows[0];
+    const newDoneState = existing.done ? 0 : 1;
+
+    const updatedResult = await db.query(
+      "UPDATE reminders SET done = $1 WHERE id = $2 RETURNING *",
+      [newDoneState, id]
+    );
+
+    // If the reminder is now tracked as 'done' (dose taken), decrement stock
+    if (newDoneState === 1) {
+      try {
+        await db.query(
+          "UPDATE medicines SET tablets_qty = GREATEST(tablets_qty - 1, 0) WHERE user_id = $1 AND medicine_name = $2",
+          [req.user.id, existing.medicine_name]
+        );
+      } catch (err) {
+        console.error("Failed to decrement medicine stock:", err);
+      }
+    }
+
+    res.json(normalise(updatedResult.rows[0]));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // DELETE /api/reminders/:id
-router.delete("/:id", (req, res) => {
-  const { id } = req.params;
-  const existing = db
-    .prepare("SELECT * FROM reminders WHERE id = ? AND user_id = ?")
-    .get(id, req.user.id);
-  if (!existing) return res.status(404).json({ error: "Reminder not found." });
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existingResult = await db.query(
+      "SELECT * FROM reminders WHERE id = $1 AND user_id = $2",
+      [id, req.user.id]
+    );
 
-  db.prepare("DELETE FROM reminders WHERE id = ?").run(id);
-  res.json({ success: true, id: Number(id) });
+    if (existingResult.rows.length === 0) {
+      return res.status(404).json({ error: "Reminder not found." });
+    }
+
+    await db.query("DELETE FROM reminders WHERE id = $1", [id]);
+    res.json({ success: true, id: Number(id) });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // DELETE /api/reminders — clear all for current user
-router.delete("/", (req, res) => {
-  db.prepare("DELETE FROM reminders WHERE user_id = ?").run(req.user.id);
-  res.json({ success: true });
+router.delete("/", async (req, res) => {
+  try {
+    await db.query("DELETE FROM reminders WHERE user_id = $1", [req.user.id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Helper: snake_case → camelCase
 function normalise(row) {
+  if (!row) return null;
   return {
     id: row.id,
     userId: row.user_id,

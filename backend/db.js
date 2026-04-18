@@ -1,104 +1,133 @@
-const Database = require("better-sqlite3");
-const path = require("path");
+const { Pool } = require("pg");
+require("dotenv").config();
 
-const db = new Database(path.join(__dirname, "amos.db"));
+// Build pool config: prefer explicit env vars, fall back to connection string
+const poolConfig = process.env.PGHOST
+  ? {
+      host: process.env.PGHOST,
+      port: parseInt(process.env.PGPORT || "5432", 10),
+      database: process.env.PGDATABASE || "postgres",
+      user: process.env.PGUSER || "postgres",
+      password: process.env.PGPASSWORD,
+      ssl: { rejectUnauthorized: false },
+      // Force IPv4 to avoid IPv6-only DNS issues
+      family: 4
+    }
+  : {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      // Force IPv4 to avoid IPv6-only DNS issues
+      family: 4
+    };
 
-// Enable WAL mode for better performance
-db.pragma("journal_mode = WAL");
+const pool = new Pool(poolConfig);
 
-// ── Users table ──────────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    username          TEXT    NOT NULL UNIQUE,
-    full_name         TEXT    NOT NULL,
-    email             TEXT    NOT NULL UNIQUE,
-    phone             TEXT    NOT NULL,
-    password_hash     TEXT    NOT NULL,
-    age               INTEGER DEFAULT NULL,
-    gender            TEXT    DEFAULT 'Male',
-    city              TEXT    DEFAULT '',
-    address           TEXT    DEFAULT '',
-    blood_group       TEXT    DEFAULT '',
-    allergies         TEXT    DEFAULT '',
-    conditions        TEXT    DEFAULT '',
-    emergency_name    TEXT    DEFAULT '',
-    emergency_relation TEXT   DEFAULT '',
-    emergency_phone   TEXT    DEFAULT '',
-    created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
-  );
-`);
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle pg client', err);
+  process.exit(-1);
+});
 
-// ── Medicines table ──────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS medicines (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER NOT NULL,
-    medicine_name   TEXT    NOT NULL,
-    dosage_per_day  INTEGER NOT NULL DEFAULT 1,
-    tablets_qty     INTEGER NOT NULL DEFAULT 0,
-    reorder_level   INTEGER NOT NULL DEFAULT 10,
-    notes           TEXT    DEFAULT '',
-    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+async function initDb() {
+  try {
+    // ── Users table ──────────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id                SERIAL PRIMARY KEY,
+        username          VARCHAR(255) NOT NULL UNIQUE,
+        full_name         VARCHAR(255) NOT NULL,
+        email             VARCHAR(255) NOT NULL UNIQUE,
+        phone             VARCHAR(20) NOT NULL,
+        password_hash     VARCHAR(255) NOT NULL,
+        age               INTEGER DEFAULT NULL,
+        gender            VARCHAR(50) DEFAULT 'Male',
+        city              VARCHAR(255) DEFAULT '',
+        address           TEXT DEFAULT '',
+        blood_group       VARCHAR(10) DEFAULT '',
+        allergies         TEXT DEFAULT '',
+        conditions        TEXT DEFAULT '',
+        emergency_name    VARCHAR(255) DEFAULT '',
+        emergency_relation VARCHAR(255) DEFAULT '',
+        emergency_phone   VARCHAR(20) DEFAULT '',
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-// ── Orders table ─────────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER NOT NULL,
-    order_ref       TEXT    NOT NULL,
-    medicine_name   TEXT    NOT NULL,
-    qty             INTEGER NOT NULL DEFAULT 1,
-    pharmacy        TEXT    DEFAULT '',
-    status          TEXT    NOT NULL DEFAULT 'Pending',
-    price           REAL    DEFAULT 0,
-    order_date      TEXT    NOT NULL DEFAULT (date('now')),
-    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+    // ── Medicines table ──────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS medicines (
+        id              SERIAL PRIMARY KEY,
+        user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        medicine_name   VARCHAR(255) NOT NULL,
+        dosage_per_day  INTEGER NOT NULL DEFAULT 1,
+        tablets_qty     INTEGER NOT NULL DEFAULT 0,
+        reorder_level   INTEGER NOT NULL DEFAULT 10,
+        notes           TEXT DEFAULT '',
+        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-// ── Prescriptions table ─────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS prescriptions (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER NOT NULL,
-    file_name       TEXT    NOT NULL,
-    file_path       TEXT    NOT NULL,
-    uploaded_at     TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+    // ── Orders table ─────────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id              SERIAL PRIMARY KEY,
+        user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        order_ref       VARCHAR(255) NOT NULL,
+        medicine_name   VARCHAR(255) NOT NULL,
+        qty             INTEGER NOT NULL DEFAULT 1,
+        pharmacy        VARCHAR(255) DEFAULT '',
+        status          VARCHAR(50) NOT NULL DEFAULT 'Pending',
+        price           NUMERIC DEFAULT 0,
+        order_date      VARCHAR(10) NOT NULL,
+        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-// ── Reminders table ─────────────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS reminders (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id     INTEGER NOT NULL,
-    medicine_name TEXT  NOT NULL,
-    date        TEXT    NOT NULL,
-    time        TEXT    NOT NULL,
-    frequency   TEXT    NOT NULL DEFAULT 'Daily',
-    note        TEXT    DEFAULT '',
-    done        INTEGER NOT NULL DEFAULT 0,
-    notified    INTEGER NOT NULL DEFAULT 0,
-    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+    // ── Prescriptions table ─────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prescriptions (
+        id              SERIAL PRIMARY KEY,
+        user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_name       VARCHAR(255) NOT NULL,
+        file_path       TEXT NOT NULL,
+        uploaded_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-// ── FCM device tokens table ─────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS device_tokens (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER NOT NULL,
-    token      TEXT    NOT NULL UNIQUE,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-`);
+    // ── Reminders table ─────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reminders (
+        id          SERIAL PRIMARY KEY,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        medicine_name VARCHAR(255) NOT NULL,
+        date        VARCHAR(10) NOT NULL,
+        time        VARCHAR(5) NOT NULL,
+        frequency   VARCHAR(50) NOT NULL DEFAULT 'Daily',
+        note        TEXT DEFAULT '',
+        done        INTEGER NOT NULL DEFAULT 0,
+        notified    INTEGER NOT NULL DEFAULT 0,
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
 
-module.exports = db;
+    // ── FCM device tokens table ─────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS device_tokens (
+        id         SERIAL PRIMARY KEY,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token      TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log("PostgreSQL Database initialized via Supabase pg.");
+  } catch (error) {
+    console.error("Error initializing database schema:", error);
+  }
+}
+
+initDb();
+
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  pool
+};

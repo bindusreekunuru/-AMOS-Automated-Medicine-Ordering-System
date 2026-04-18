@@ -5,10 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registration - AMOS</title>
 <style>
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --secondary: #ecfdf5;
+    --secondary-text: #059669;
+    --bg-color: #f3f4f6;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+}
+
 body{
     margin:0;
-    font-family: Arial, sans-serif;
-    background:#eaf1f8;
+    font-family: 'Inter', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    color: var(--text-main);
     min-height:100vh;
     padding:20px;
     box-sizing:border-box;
@@ -21,16 +33,19 @@ body{
     width:100%;
     max-width:960px;
     min-height:560px;
-    background:white;
-    border-radius:14px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius:24px;
     overflow:hidden;
-    box-shadow:0 14px 35px rgba(44,62,80,0.2);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
     display:grid;
     grid-template-columns:1fr 1.05fr;
 }
 
 .left{
-    background:linear-gradient(145deg, #2c3e50, #365b80);
+    background: rgba(44, 62, 80, 0.85); /* Dark transparent */
+    backdrop-filter: blur(10px);
     color:white;
     padding:38px 32px;
     display:flex;
@@ -98,13 +113,16 @@ label{
 input, textarea, select{
     width:100%;
     padding:10px 12px;
-    border:1px solid #cbd5e1;
-    border-radius:6px;
+    background: rgba(255, 255, 255, 0.9);
+    border:1px solid #d1d5db;
+    border-radius:8px;
     font-size:14px;
     box-sizing:border-box;
+    transition: all 0.3s ease;
 }
 
 input:focus, textarea:focus, select:focus{
+    background: rgba(255, 255, 255, 0.8);
     border-color:#3498db;
     outline:none;
     box-shadow:0 0 0 3px rgba(52,152,219,0.15);
@@ -152,16 +170,20 @@ textarea{
     margin-top:18px;
     padding:12px 14px;
     border:none;
-    border-radius:6px;
-    background:#27ae60;
+    border-radius:8px;
+    background: var(--primary);
     color:white;
     font-size:16px;
     font-weight:bold;
     cursor:pointer;
+    transition: background 0.3s ease, transform 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
 }
 
 .submit-btn:hover{
-    background:#219a52;
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.4);
 }
 
 .status{

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMOS - Secure Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --bg-color: #f3f4f6;
+    --card-bg: white;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-color);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.checkout-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--card-bg);
+    border-radius: 24px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Order Summary Side */
+.summary-side {
+    background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
+    color: white;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.back-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 40px;
+    transition: color 0.2s;
+}
+
+.back-link:hover { color: white; }
+
+.amount-title {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 5px;
+}
+
+.amount {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0 0 40px 0;
+}
+
+.order-details {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: auto;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.detail-row:last-child { margin-bottom: 0; }
+.detail-row span:last-child { font-weight: 600; text-align: right;}
+
+/* Payment Side */
+.payment-side {
+    padding: 40px;
+}
+
+.title {
+    margin: 0 0 30px 0;
+    font-size: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+}
+
+input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 14px 14px 45px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    font-size: 15px;
+    transition: all 0.2s;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.pay-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.pay-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.pay-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.secure-badge {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.spinner { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+    .checkout-container { grid-template-columns: 1fr; }
+    .summary-side { padding: 30px; }
+    .payment-side { padding: 30px; }
+}
+</style>
+</head>
+<body>
+
+<div class="checkout-container">
+    <div class="summary-side">
+        <a href="javascript:history.back()" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        
+        <div class="amount-title">Total Restock Amount</div>
+        <div class="amount">Rs. <span id="displayPrice">0</span></div>
+
+        <div class="order-details">
+            <div class="detail-row">
+                <span>Medicine:</span>
+                <span id="displayMedicine">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span>Pharmacy:</span>
+                <span id="displayPharmacy">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span>Restock Qty:</span>
+                <span>30 Tablets</span>
+            </div>
+            <div class="detail-row">
+                <span>Delivery:</span>
+                <span>Express (Included)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-side">
+        <h2 class="title">Payment Details</h2>
+        <form id="paymentForm">
+            <div class="form-group">
+                <label>Cardholder Name</label>
+                <div class="input-with-icon">
+                    <i class="fa-regular fa-user"></i>
+                    <input type="text" placeholder="John Doe" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Card Number</label>
+                <div class="input-with-icon">
+                    <i class="fa-regular fa-credit-card"></i>
+                    <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Expiry Date</label>
+                    <div class="input-with-icon">
+                        <i class="fa-regular fa-calendar"></i>
+                        <input type="text" placeholder="MM/YY" maxlength="5" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>CVC</label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="pay-btn" id="payBtn">
+                Pay Rs. <span id="btnPrice">0</span>
+            </button>
+            <div class="secure-badge">
+                <i class="fa-solid fa-shield-halved"></i> Payments are secure and encrypted
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+// Do not enforce auth globally here to avoid double auth redirects, 
+// api call will bounce if bad token. But let's check basic presence:
+if (!getToken()) {
+    window.location.href = "login.html";
+}
+
+// Extract URL params
+const urlParams = new URLSearchParams(window.location.search);
+const medName = urlParams.get('medicineName') || 'Unknown Medicine';
+const pharmacy = urlParams.get('pharmacy') || 'Default Pharmacy';
+
+// Mock price calculation based on string length just for UI realism
+const price = (medName.length * 15 + 50);
+
+// Populate UI
+document.getElementById('displayMedicine').textContent = medName;
+document.getElementById('displayPharmacy').textContent = pharmacy;
+document.getElementById('displayPrice').textContent = price;
+document.getElementById('btnPrice').textContent = price;
+
+// Form Submission (Simulated Payment)
+document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('payBtn');
+    
+    // Simulate processing delay
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner spinner"></i> Processing Payment...';
+
+    try {
+        // Create the actual order via backend API
+        // This will ALSO auto-restock the medicine in the DB per the new backend logic!
+        const result = await api("POST", "/orders", {
+            medicineName: medName,
+            qty: 30, // Standard reorder pack
+            pharmacy: pharmacy,
+            status: "Ordered",
+            price: price
+        });
+
+        btn.style.background = "#059669";
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Payment Successful!';
+        
+        // Wait 1.5s then redirect to orders
+        setTimeout(() => {
+            window.location.href = "order.html";
+        }, 1500);
+
+    } catch (err) {
+        btn.disabled = false;
+        btn.style.background = "#dc2626";
+        btn.innerHTML = 'Payment Failed. Try Again';
+        alert("Failed to process order: " + err.message);
+    }
+});
+</script>
+</body>
+</html>

@@ -8,58 +8,56 @@ const router = express.Router();
 router.use(authenticate);
 
 // ── GET /api/dashboard ──────────────────────────────────────────────────────
-router.get("/", (req, res) => {
-  const userId = req.user.id;
+router.get("/", async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-  // Active medicines count
-  const activeMedicines = db
-    .prepare("SELECT COUNT(*) as count FROM medicines WHERE user_id = ?")
-    .get(userId).count;
+    // We can run these independent queries in parallel
+    const [
+      activeMedicinesResult,
+      medicinesResult,
+      pendingOrdersResult
+    ] = await Promise.all([
+      db.query("SELECT COUNT(*) as count FROM medicines WHERE user_id = $1", [userId]),
+      db.query("SELECT * FROM medicines WHERE user_id = $1", [userId]),
+      db.query("SELECT COUNT(*) as count FROM orders WHERE user_id = $1 AND status IN ('Pending', 'Ordered', 'Shipped')", [userId])
+    ]);
 
-  // Today's reminders count
-  const today = new Date().toISOString().slice(0, 10);
-  const todayReminders = db
-    .prepare(
-      "SELECT COUNT(*) as count FROM reminders WHERE user_id = ? AND date = ?"
-    )
-    .get(userId, today).count;
+    const activeMedicines = parseInt(activeMedicinesResult.rows[0].count, 10);
+    const pendingOrders = parseInt(pendingOrdersResult.rows[0].count, 10);
 
-  // Low stock items (medicines where days left <= 7)
-  const medicines = db
-    .prepare("SELECT * FROM medicines WHERE user_id = ?")
-    .all(userId);
+    const today = new Date().toISOString().slice(0, 10);
+    const todayRemindersResult = await db.query(
+      "SELECT COUNT(*) as count FROM reminders WHERE user_id = $1 AND date = $2",
+      [userId, today]
+    );
+    const todayReminders = parseInt(todayRemindersResult.rows[0].count, 10);
 
-  let lowStock = 0;
-  medicines.forEach((m) => {
-    const daysLeft =
-      m.dosage_per_day > 0
-        ? Math.floor(m.tablets_qty / m.dosage_per_day)
-        : m.tablets_qty;
-    if (daysLeft <= 7) lowStock++;
-  });
+    // Low stock items (medicines where days left <= 7)
+    let lowStock = 0;
+    medicinesResult.rows.forEach((m) => {
+      const daysLeft =
+        m.dosage_per_day > 0
+          ? Math.floor(m.tablets_qty / m.dosage_per_day)
+          : m.tablets_qty;
+      if (daysLeft <= 7) lowStock++;
+    });
 
-  // Pending orders count
-  const pendingOrders = db
-    .prepare(
-      "SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('Pending', 'Ordered', 'Shipped')"
-    )
-    .get(userId).count;
-
-  // Upcoming reminders (next 3)
-  const upcomingReminders = db
-    .prepare(
+    // Upcoming reminders (next 3)
+    const upcomingRemindersResult = await db.query(
       `SELECT * FROM reminders
-       WHERE user_id = ? AND done = 0 AND (date > ? OR (date = ? AND time >= ?))
+       WHERE user_id = $1 AND done = 0 AND (date > $2 OR (date = $3 AND time >= $4))
        ORDER BY date ASC, time ASC
-       LIMIT 3`
-    )
-    .all(
-      userId,
-      today,
-      today,
-      new Date().toTimeString().slice(0, 5)
-    )
-    .map((r) => ({
+       LIMIT 3`,
+      [
+        userId,
+        today,
+        today,
+        new Date().toTimeString().slice(0, 5)
+      ]
+    );
+
+    const upcomingReminders = upcomingRemindersResult.rows.map((r) => ({
       id: r.id,
       medicineName: r.medicine_name,
       date: r.date,
@@ -67,13 +65,17 @@ router.get("/", (req, res) => {
       frequency: r.frequency,
     }));
 
-  res.json({
-    activeMedicines,
-    todayReminders,
-    lowStock,
-    pendingOrders,
-    upcomingReminders,
-  });
+    res.json({
+      activeMedicines,
+      todayReminders,
+      lowStock,
+      pendingOrders,
+      upcomingReminders,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 module.exports = router;
