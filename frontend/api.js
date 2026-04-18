@@ -54,8 +54,18 @@ async function api(method, path, body) {
 
   if (res.status === 401) {
     clearToken();
-    window.location.href = "login.html";
+    if (!window.location.pathname.includes('login.html')) {
+      window.location.href = "login.html";
+    }
     throw new Error("Session expired");
+  }
+
+  // Check if response is actually JSON
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await res.text();
+    console.error("Non-JSON response from server:", text);
+    throw new Error(`Server Error (${res.status}): ${text.slice(0, 100)}${text.length > 100 ? '...' : ''}`);
   }
 
   const data = await res.json();

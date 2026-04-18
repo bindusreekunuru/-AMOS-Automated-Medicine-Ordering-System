@@ -23,8 +23,8 @@ const poolConfig = process.env.PGHOST
 const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle pg client', err);
-  process.exit(-1);
+  console.error('Unexpected error on idle pg client:', err.message);
+  // Do NOT process.exit(-1) in serverless environments
 });
 
 async function initDb() {
@@ -119,9 +119,10 @@ async function initDb() {
       );
     `);
 
-    console.log("PostgreSQL Database initialized via Supabase pg.");
+    console.log("PostgreSQL Database initialized successfully.");
   } catch (error) {
-    console.error("Error initializing database schema:", error);
+    console.error("Error initializing database schema:", error.message);
+    console.error("Check your DATABASE_URL or environment variables.");
   }
 }
 

@@ -36,8 +36,11 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  console.log(`AMOS backend running on port ${PORT}`);
-});
+// In Vercel, we only export the app and don't call app.listen()
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`AMOS backend running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
