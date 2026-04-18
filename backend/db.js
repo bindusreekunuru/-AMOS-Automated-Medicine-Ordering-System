@@ -9,15 +9,11 @@ const poolConfig = process.env.PGHOST
       database: process.env.PGDATABASE || "postgres",
       user: process.env.PGUSER || "postgres",
       password: process.env.PGPASSWORD,
-      ssl: { rejectUnauthorized: false },
-      // Force IPv4 to avoid IPv6-only DNS issues
-      family: 4
+      ssl: { rejectUnauthorized: false }
     }
   : {
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      // Force IPv4 to avoid IPv6-only DNS issues
-      family: 4
+      ssl: { rejectUnauthorized: false }
     };
 
 const pool = new Pool(poolConfig);
@@ -126,7 +122,8 @@ async function initDb() {
   }
 }
 
-initDb();
+// In serverless, we don't want to run schema init on every cold start
+// initDb();
 
 module.exports = {
   query: (text, params) => pool.query(text, params),

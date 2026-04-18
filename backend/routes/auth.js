@@ -20,6 +20,7 @@ router.post("/register", async (req, res) => {
       city,
       address,
     } = req.body;
+    console.log(`[Register] Attempting to register user: ${username} (${email})`);
 
     // Validation
     if (!username || !fullName || !email || !phone || !password) {
@@ -41,6 +42,7 @@ router.post("/register", async (req, res) => {
     }
 
     // Check uniqueness
+    console.log(`[Register] Checking database for existing username/email...`);
     const existing = await db.query(
       "SELECT id FROM users WHERE username = $1 OR LOWER(email) = LOWER($2)",
       [username, email]
@@ -53,8 +55,10 @@ router.post("/register", async (req, res) => {
     }
 
     // Hash password & insert
+    console.log(`[Register] Hashing password...`);
     const passwordHash = bcrypt.hashSync(password, 10);
 
+    console.log(`[Register] Inserting user into database...`);
     const result = await db.query(
       `INSERT INTO users (username, full_name, email, phone, password_hash, age, gender, city, address)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
@@ -72,6 +76,7 @@ router.post("/register", async (req, res) => {
     );
 
     const userId = result.rows[0].id;
+    console.log(`[Register] User created with ID: ${userId}. Generating token...`);
 
     // Generate JWT
     const token = jwt.sign(
@@ -79,6 +84,7 @@ router.post("/register", async (req, res) => {
       JWT_SECRET,
       { expiresIn: "7d" }
     );
+    console.log(`[Register] Registration complete for ${username}.`);
 
     res.status(201).json({
       message: "Registration successful.",
