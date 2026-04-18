@@ -55,8 +55,8 @@ router.post("/register", async (req, res) => {
     }
 
     // Hash password & insert
-    console.log(`[Register] Hashing password...`);
-    const passwordHash = bcrypt.hashSync(password, 10);
+    console.log(`[Register] Hashing password (async)...`);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     console.log(`[Register] Inserting user into database...`);
     const result = await db.query(
@@ -125,7 +125,7 @@ router.post("/login", async (req, res) => {
     }
 
     const user = userResult.rows[0];
-    const valid = bcrypt.compareSync(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
