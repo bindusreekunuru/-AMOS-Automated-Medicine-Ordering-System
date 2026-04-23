@@ -1,5 +1,6 @@
 const { Pool } = require("pg");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 // Build pool config: prefer explicit env vars, fall back to connection string
 const poolConfig = process.env.PGHOST
