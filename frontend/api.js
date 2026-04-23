@@ -6,8 +6,8 @@
  */
 
 // Support local development and production on Vercel
-const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-const API_BASE = isLocal ? "http://127.0.0.1:3001/api" : "/api";
+const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost" || window.location.hostname === "";
+const API_BASE = isLocal ? `http://${window.location.hostname || '127.0.0.1'}:3001/api` : "/api";
 
 function getToken() {
   return localStorage.getItem("amosToken");
