@@ -98,8 +98,9 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("[Register] Error:", error.message || error);
+    console.error("[Register] Stack:", error.stack);
+    res.status(500).json({ error: "Internal server error: " + (error.message || "unknown") });
   }
 });
 
@@ -149,8 +150,9 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("[Login] Error:", error.message || error);
+    console.error("[Login] Stack:", error.stack);
+    res.status(500).json({ error: "Internal server error: " + (error.message || "unknown") });
   }
 });
 
@@ -187,7 +189,7 @@ router.get("/me", authenticate, async (req, res) => {
       createdAt: user.created_at,
     });
   } catch (error) {
-    console.error(error);
+    console.error("[Me] Error:", error.message || error);
     res.status(500).json({ error: "Internal server error." });
   }
 });

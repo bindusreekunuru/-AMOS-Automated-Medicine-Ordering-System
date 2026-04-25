@@ -200,39 +200,83 @@ function triggerLowStockModal(medicine) {
   });
 
   // Geolocation and Pharmacy Locator
+  // fetchWithTimeout: wraps fetch with an AbortController timeout
+  function fetchWithTimeout(url, ms) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+  }
+
+  async function searchPharmacies(lat, lon) {
+    const query = `[out:json];node["amenity"="pharmacy"](around:5000,${lat},${lon});out body;`;
+    const encoded = encodeURIComponent(query);
+
+    // Try primary Overpass endpoint first, then a mirror
+    const endpoints = [
+      "https://overpass-api.de/api/interpreter?data=" + encoded,
+      "https://overpass.openstreetmap.ru/api/interpreter?data=" + encoded
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetchWithTimeout(url, 10000); // 10-second timeout
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data.elements && data.elements.length > 0) {
+          return data.elements[0];
+        }
+        return null; // API responded but no pharmacies found
+      } catch (e) {
+        // Timed out or network error — try next mirror
+        continue;
+      }
+    }
+    throw new Error("All pharmacy API endpoints failed");
+  }
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        const query = `[out:json];node["amenity"="pharmacy"](around:5000, ${lat}, ${lon});out body;`;
-        
+        const mapsLink = `https://www.google.com/maps/search/pharmacy/@${lat},${lon},15z`;
+
         try {
-          const res = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query));
-          const data = await res.json();
-          if (data.elements && data.elements.length > 0) {
-            const p = data.elements[0]; // Take nearest/first
+          const p = await searchPharmacies(lat, lon);
+          if (p) {
             selectedPharmacy = p.tags.name || "Local Pharmacy";
+            const street = p.tags['addr:street'] || p.tags['addr:full'] || 'Nearby';
             document.getElementById('g-pharmacy-finder').innerHTML = `
               <strong>Nearest Pharmacy Found:</strong><br>
-              ${selectedPharmacy}<br>
-              <span style="font-size:13px; color:#6b7280;">${p.tags['addr:street'] || 'Nearby'}</span>
+              📍 ${selectedPharmacy}<br>
+              <span style="font-size:13px; color:#6b7280;">${street}</span><br>
+              <a href="${mapsLink}" target="_blank" style="font-size:12px; color:#4f46e5;">View more on Google Maps ↗</a>
             `;
           } else {
-            document.getElementById('g-pharmacy-finder').innerHTML = "No pharmacies found within 5km. (Continuing with default provider)";
+            document.getElementById('g-pharmacy-finder').innerHTML = `
+              No pharmacies found within 5km.<br>
+              <a href="${mapsLink}" target="_blank" style="font-size:12px; color:#4f46e5;">Search pharmacies on Google Maps ↗</a>
+            `;
           }
         } catch (e) {
-          document.getElementById('g-pharmacy-finder').innerHTML = "Network error searching for pharmacies.";
+          document.getElementById('g-pharmacy-finder').innerHTML = `
+            Could not reach pharmacy search service.<br>
+            <a href="${mapsLink}" target="_blank" style="font-size:12px; color:#4f46e5;">Search pharmacies on Google Maps ↗</a>
+          `;
         }
         orderBtn.disabled = false;
       },
       (err) => {
-        document.getElementById('g-pharmacy-finder').innerHTML = "Location disabled. Cannot find nearest pharmacy.";
+        document.getElementById('g-pharmacy-finder').innerHTML = `
+          Location access denied.<br>
+          <a href="https://www.google.com/maps/search/pharmacy/" target="_blank" style="font-size:12px; color:#4f46e5;">Search pharmacies on Google Maps ↗</a>
+        `;
         orderBtn.disabled = false;
-      }
+      },
+      { timeout: 8000 } // 8-second geolocation timeout
     );
   } else {
-    document.getElementById('g-pharmacy-finder').innerHTML = "Geolocation not supported.";
+    document.getElementById('g-pharmacy-finder').innerHTML = "Geolocation not supported by your browser.";
     orderBtn.disabled = false;
   }
 }

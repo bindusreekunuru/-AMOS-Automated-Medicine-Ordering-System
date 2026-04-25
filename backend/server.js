@@ -36,6 +36,22 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+// DB connectivity check — useful for diagnosing Vercel env var issues
+app.get("/api/health/db", async (req, res) => {
+  try {
+    const result = await db.query("SELECT 1 AS connected");
+    res.json({ status: "ok", db: "connected", row: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      db: "disconnected",
+      message: err.message,
+      hint: "Check that PGHOST, PGPASSWORD, PGUSER, PGDATABASE, PGPORT are set in Vercel environment variables."
+    });
+  }
+});
+
+
 // In Vercel, we only export the app and don't call app.listen()
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
