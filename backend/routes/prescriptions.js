@@ -12,8 +12,16 @@ router.use(authenticate);
 
 // ── Multer configuration ────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+
+// Only try to create uploads dir in non-serverless environments (Vercel filesystem is read-only)
+if (process.env.VERCEL !== "1") {
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (e) {
+    console.warn("Could not create uploads directory:", e.message);
+  }
 }
 
 const storage = multer.diskStorage({
@@ -38,6 +46,7 @@ const upload = multer({
     }
   },
 });
+
 
 // ── POST /api/prescriptions/upload ──────────────────────────────────────────
 router.post("/upload", upload.single("file"), async (req, res) => {
